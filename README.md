@@ -17,7 +17,61 @@
 
 ## System Architecture
 
-> 🚧 다이어그램 추가 예정 — M1 마일스톤 (5/10)
+```mermaid
+flowchart TD
+    User([User])
+    User -->|POST /query + JWT| FastAPI[FastAPI Gateway]
+    FastAPI --> Auth
+    Answer -->|answer + citations<br/>or refusal| User
+    
+    subgraph LangGraph["LangGraph Agent"]
+        direction TB
+        Auth["🔐 Auth Node"] -->|user_ctx| QR["✏️ Query Rewrite Node"]
+        QR -->|rewritten_query| Retrieval["🔍 Retrieval Node"]
+        Retrieval -->|candidate_docs| Rerank["📊 Re-ranking Node"]
+        Rerank -->|ranked_docs| Answer["💬 Answer Node"]
+    end
+    
+    Mock["Mock JWT Issuer"] -.->|verify keys| Auth
+    LLM["LLM API"] -.-> QR
+    LLM -.-> Answer
+    PG[("pgvector<br/>+ permission metadata")] -.-> Retrieval
+    BGE["BGE Reranker v2-m3"] -.-> Rerank
+    
+    Audit["📝 Audit Logger"]
+    Auth -.-> Audit
+    QR -.-> Audit
+    Retrieval -.-> Audit
+    Rerank -.-> Audit
+    Answer -.-> Audit
+    
+    classDef nodeStyle fill:#dbeafe,stroke:#1e40af,stroke-width:2px,color:#1e3a8a
+    classDef externalStyle fill:#f3f4f6,stroke:#6b7280,stroke-width:1px,stroke-dasharray:5 5,color:#374151
+    classDef auditStyle fill:#fed7aa,stroke:#c2410c,stroke-width:2px,color:#7c2d12
+    classDef userStyle fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000
+    
+    class Auth,QR,Retrieval,Rerank,Answer nodeStyle
+    class Mock,LLM,PG,BGE externalStyle
+    class Audit auditStyle
+    class User,FastAPI userStyle
+```
+
+LangGraph 기반 멀티에이전트 구성:
+- **Auth Node** — JWT 검증, 사용자 역할·속성 추출
+- **Query Rewrite Node** — 권한 컨텍스트를 반영한 쿼리 재작성
+- **Retrieval Node** — Vector DB에서 권한 메타데이터 필터링 + 의미검색
+- **Re-ranking Node** — BGE Reranker 기반 권한·관련도 종합 점수
+- **Answer Node** — Citation 포함 답변 생성, 권한 부족 시 거부 응답
+
+> 모든 노드의 입출력은 별도의 **Audit Logger**에 기록되어 권한 추적과 사후 감사를 지원합니다 (다이어그램 단순화를 위해 생략).
+
+LangGraph 기반 멀티에이전트 구성:
+- **Auth Node** — JWT 검증, 사용자 역할·속성 추출
+- **Query Rewrite Node** — 권한 컨텍스트를 반영한 쿼리 재작성
+- **Retrieval Node** — Vector DB에서 권한 메타데이터 필터링 + 의미검색
+- **Re-ranking Node** — BGE Reranker 기반 권한·관련도 종합 점수
+- **Answer Node** — Citation 포함 답변 생성, 권한 부족 시 거부 응답
+- **Audit Logger** — 모든 검색·답변 감사 로그
 
 LangGraph 기반 멀티에이전트 구성:
 
