@@ -8,7 +8,9 @@ license = { file = "LICENSE" }
 authors = [{ name = "Jongmin Park" }]
 
 dependencies = [
-    # Added incrementally per milestone.
+    "langgraph>=0.2",
+    "langchain>=0.3",
+    "langchain-anthropic>=0.3",
 ]
 
 [project.optional-dependencies]
@@ -32,3 +34,4 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RET"]
+
