@@ -554,3 +554,424 @@ documents:
       ## 결과
       Qualified Opinion — 위 3건 외 적정. 2026 차기 감사에서 Unqualified Opinion 달성 목표.
     expected_readers: [security_officer, auditor]
+
+# ─────────────────────────────────────────────────────────────────
+  # Category: tech (10 documents)
+  # ─────────────────────────────────────────────────────────────────
+
+  - id: DOC-016
+    title: "BWCorp Infrastructure Architecture v3"
+    category: tech
+    sub_type: tech.architecture
+    sensitivity: Medium
+    language: mixed
+    body: |
+      # BWCorp Infrastructure Architecture v3
+
+      Last Updated: 2026-09-15
+      Author: Tech Architecture Council
+      Status: Approved
+
+      ## 개요
+      BWCorp 인프라는 AWS 멀티 리전(Seoul + Tokyo DR) 기반 마이크로서비스 아키텍처로
+      운영됩니다. 본 문서는 v3 개정판 (2026)으로, 이전 v2 대비 컨테이너 기반 워크로드
+      전환과 zero-trust 네트워크 도입이 주요 변경 사항입니다.
+
+      ## 핵심 컴포넌트
+      - Compute: AWS ECS Fargate (서비스 워크로드), EKS (데이터 파이프라인)
+      - Storage: Aurora PostgreSQL (운영 DB), S3 (객체 스토리지), ElasticSearch (로그)
+      - Networking: AWS Transit Gateway, Private Link 기반 내부 통신
+      - Identity: ADFS + Keycloak (OIDC), AWS IAM Identity Center 연동
+
+      ## 보안 원칙
+      - 모든 서비스 간 통신 mTLS 적용
+      - IAM 정책은 least-privilege 원칙
+      - 외부 노출 엔드포인트는 WAF + CloudFront 경유 의무
+
+      ## 변경 절차
+      인프라 변경은 ArchOps Council 승인 필요 (월 1회). 긴급 변경은 user_sec_001
+      우선 통보 후 사후 승인.
+
+      상세 다이어그램과 컴포넌트별 spec은 사내 위키 ARCH-V3 페이지 참조.
+    expected_readers: [user_emp_001, user_emp_003, user_tl_001, user_exec_001]
+
+  - id: DOC-017
+    title: "Microservices Communication Patterns"
+    category: tech
+    sub_type: tech.architecture
+    sensitivity: Medium
+    language: mixed
+    body: |
+      # Microservices Communication Patterns
+
+      ## 통신 방식 분류
+      BWCorp 마이크로서비스는 세 가지 통신 패턴을 표준으로 사용합니다.
+
+      ### 1. 동기 REST (HTTP/2)
+      - 사용 사례: 사용자 요청 응답, 즉시 결과 필요한 조회
+      - 인증: 서비스 간 mTLS + Service Token (JWT)
+      - Timeout: 기본 3초, 최대 10초
+
+      ### 2. 비동기 Event (Apache Kafka)
+      - 사용 사례: 도메인 이벤트, 감사 로그, 비동기 통지
+      - Topic 명명: {domain}.{event_type}.{version} (예: payment.completed.v2)
+      - Retention: 7일 (감사 관련은 30일)
+
+      ### 3. 비동기 RPC (gRPC)
+      - 사용 사례: 내부 백오피스, 데이터 파이프라인
+      - 외부 노출 금지, VPC 내부 한정
+
+      ## 안티 패턴 (금지)
+      - 직접 DB 공유: 서비스 경계 위반
+      - HTTP 폴링: Event 기반으로 대체
+      - 동기 호출 체인 3단계 이상: 적절히 비동기화 필요
+
+      ## 트러블슈팅
+      - 서비스 간 latency 측정: Datadog APM
+      - Event 추적: Kafka Connect → ElasticSearch
+
+      본 패턴 위반 시 Architecture Review 거부 사유에 해당합니다.
+    expected_readers: [user_emp_001, user_emp_003, user_tl_001, user_exec_001]
+
+  - id: DOC-018
+    title: "Payment API v2 Specification"
+    category: tech
+    sub_type: tech.api
+    sensitivity: Low
+    language: mixed
+    body: |
+      # Payment API v2 Specification
+
+      Status: Stable
+      Version: 2.3.1
+      Base URL: https://api.bwcorp.local/payment/v2
+
+      ## 인증
+      - 모든 호출은 OAuth 2.0 Bearer Token 필요
+      - Token 발급: POST /auth/token (Client Credentials Grant)
+      - Token 만료: 1시간, refresh 별도 필요 없음 (재발급)
+
+      ## 주요 엔드포인트
+
+      ### POST /payments
+      결제 요청 생성
+      - Request: { amount, currency, customer_id, payment_method }
+      - Response: { payment_id, status, created_at }
+      - 응답 시간: P50 < 300ms, P99 < 1.5s
+
+      ### GET /payments/{payment_id}
+      결제 상태 조회 (캐시 권장 — 5분 TTL)
+
+      ### POST /payments/{payment_id}/refund
+      환불 요청 (멱등성 보장 — Idempotency-Key 헤더 필수)
+
+      ## 에러 코드
+      - 400 INVALID_REQUEST: 요청 형식 오류
+      - 402 PAYMENT_FAILED: 결제 거절
+      - 409 DUPLICATE_REQUEST: 중복 요청 (Idempotency 활용)
+      - 429 RATE_LIMITED: 분당 100회 초과
+
+      ## Sandbox 환경
+      - URL: https://sandbox-api.bwcorp.local/payment/v2
+      - 테스트 카드: 사내 위키 PAY-SANDBOX 참조
+
+      문의: payment-team@bwcorp.local
+    expected_readers: [employee, team_lead, executive, security_officer, contractor, auditor, hr_specialist]
+
+  - id: DOC-019
+    title: "SSO Authentication API Guide"
+    category: tech
+    sub_type: tech.api
+    sensitivity: Low
+    language: mixed
+    body: |
+      # SSO Authentication API Guide
+
+      본 가이드는 사내 애플리케이션이 BWCorp SSO와 통합하는 절차를 설명합니다.
+      권한 위임 표준: OAuth 2.0 + OIDC. 레거시 시스템 한정 SAML 2.0 지원.
+
+      ## 통합 시나리오
+
+      ### 신규 웹 애플리케이션 (권장)
+      - 프로토콜: OIDC Authorization Code Flow + PKCE
+      - ID Provider: Keycloak (sso.bwcorp.local)
+      - 클라이언트 등록: Architecture Review 후 user_sec_001에게 신청
+
+      ### 레거시 시스템 (SAML 2.0)
+      - ADFS 기반 통합 지원 (Single Sign-On, Single Log-Out)
+      - 권장 사항: 2027년까지 OIDC 마이그레이션 계획 수립
+
+      ## 핵심 엔드포인트
+      - Authorization: GET /auth/realms/bwcorp/protocol/openid-connect/auth
+      - Token: POST /auth/realms/bwcorp/protocol/openid-connect/token
+      - UserInfo: GET /auth/realms/bwcorp/protocol/openid-connect/userinfo
+      - Discovery: GET /.well-known/openid-configuration
+
+      ## Claims 매핑
+      표준 클레임 외 BWCorp 확장 클레임:
+      - bwcorp_role:           employee | team_lead | executive | ...
+      - bwcorp_department:     부서 코드
+      - bwcorp_clearance:      권한 등급 (1~4)
+      - bwcorp_project_scope:  프로젝트 ID 리스트 (contractor 한정)
+
+      ## 보안 요구사항
+      - Refresh Token rotation 의무 (재사용 시 세션 강제 종료)
+      - ID Token에 민감 정보 포함 금지
+
+      문의: identity-team@bwcorp.local (Tech Lead: user_tl_001)
+    expected_readers: [employee, team_lead, executive, security_officer, contractor, auditor, hr_specialist]
+
+  - id: DOC-020
+    title: "Production Incident Response Playbook"
+    category: tech
+    sub_type: tech.runbook
+    sensitivity: Medium
+    language: mixed
+    body: |
+      # Production Incident Response Playbook
+
+      본 Playbook은 사내 production 시스템 장애 발생 시 대응 절차를 정의합니다.
+
+      ## Severity 분류
+      - SEV1: 사용자 가용성 50% 이상 영향, 즉시 대응 (5분 이내)
+      - SEV2: 부분 기능 장애, 30분 이내 대응
+      - SEV3: 성능 저하, 4시간 이내 대응
+      - SEV4: 사용자 영향 없음 (개선 사항), 정기 처리
+
+      ## 초기 대응 (모든 SEV)
+      1. PagerDuty 알람 확인 및 On-Call 엔지니어 응답
+      2. #incident-{service} Slack 채널 생성 (SEV1/2)
+      3. Incident Commander 지정 (보통 On-Call 본인)
+      4. Status Page 업데이트 (외부 사용자 영향 시)
+
+      ## SEV1/2 추가 조치
+      - 5분 이내: 관련 팀 호출, Slack #war-room 활성화
+      - 15분 이내: 임원 brief (user_exec_001), 초기 영향 평가
+      - 30분 이내: 외부 communication 결정 (마케팅·CS 협의)
+
+      ## 복구 후 24시간 내
+      - Postmortem 문서 작성 (Blameless 원칙)
+      - Root Cause Analysis
+      - Action Item 도출 (담당자 지정, 마감 명시)
+
+      ## 자료
+      - Postmortem 템플릿: 사내 위키 INC-TEMPLATE
+      - 과거 사례 모음: incident.bwcorp.local/archive
+
+      문의: sre-oncall@bwcorp.local
+    expected_readers: [user_emp_001, user_emp_003, user_tl_001, user_exec_001]
+
+  - id: DOC-021
+    title: "Database Migration Procedures"
+    category: tech
+    sub_type: tech.runbook
+    sensitivity: Medium
+    language: mixed
+    body: |
+      # Database Migration Procedures
+
+      ## 적용 범위
+      Production Aurora PostgreSQL 데이터베이스의 스키마/데이터 변경 작업.
+
+      ## 사전 요구사항
+      - 마이그레이션 스크립트는 사내 표준 도구 사용 (Flyway 또는 Alembic)
+      - 모든 변경은 멱등성 (idempotent) 보장
+      - Rollback 스크립트 동시 작성 의무
+
+      ## 변경 분류
+
+      ### 호환성 변경 (Low Risk)
+      - 신규 컬럼 추가 (NULL 허용 또는 DEFAULT 지정)
+      - 신규 인덱스 추가 (CONCURRENTLY 옵션 필수)
+      - 절차: 자동화 파이프라인 통과, On-Call 알림만
+
+      ### 비호환 변경 (High Risk)
+      - 컬럼 삭제, 타입 변경, NOT NULL 제약 추가
+      - 절차:
+        1. Architecture Review 승인
+        2. 사전 dry-run (staging 환경)
+        3. 점진적 배포 전략 (read+write 호환 기간 최소 1주)
+        4. 변경 작업은 트래픽 저점 시간대 (월~목 02:00~04:00 KST)
+
+      ## 백업 의무
+      변경 직전 logical backup 수행. RPO 목표: 5분.
+
+      ## Rollback 결정
+      - 자동: 마이그레이션 실패 시 즉시
+      - 수동: SEV1/2 장애 발생 시 user_tl_001 또는 user_exec_001 승인
+
+      문의: dba-team@bwcorp.local
+    expected_readers: [user_emp_001, user_emp_003, user_tl_001, user_exec_001]
+
+  - id: DOC-022
+    title: "Project Alpha: Architecture Design"
+    category: tech
+    sub_type: tech.project
+    sensitivity: Medium
+    language: mixed
+    project_id: project_alpha
+    project_members: [user_tl_001, user_emp_001, user_ext_001]
+    body: |
+      # Project Alpha: Architecture Design
+
+      Project ID: project_alpha
+      Phase: Design (M2)
+      Lead: user_tl_001
+      Members: user_emp_001 (Backend), user_ext_001 (ExternalCo Consultant)
+      Target Launch: 2026-Q4
+
+      ## 목표
+      기존 Monolith 결제 시스템을 마이크로서비스로 분해하고, Event-driven 아키텍처로 전환.
+
+      ## 범위
+      - Payment Core 서비스 분리 (Aurora → 도메인 분리 DB)
+      - Settlement 서비스 신규 구축
+      - Reconciliation 파이프라인 자동화
+
+      ## 외부 협력
+      ExternalCo (user_ext_001 포함 2명)는 결제 도메인 모델링 자문 및 마이그레이션
+      전략 컨설팅 담당. 계약 기간: 2026-06-01 ~ 2026-09-30.
+
+      ## Architecture 의사결정
+      - ADR-001: Event Bus는 Kafka 사용 (대안: AWS SNS+SQS)
+      - ADR-002: 보상 트랜잭션은 Saga 패턴 (Orchestration 방식)
+      - ADR-003: 외부 PSP 통합은 Anti-corruption layer 도입
+
+      ## 마일스톤
+      - M1 (완료): 도메인 모델 정립
+      - M2 (진행 중): 아키텍처 설계, ADR 확정
+      - M3 (예정): 점진적 분해 (Strangler Fig 패턴)
+      - M4 (예정): Legacy 제거
+
+      상세 다이어그램과 ADR은 사내 위키 PROJECT-ALPHA 참조.
+    expected_readers: [user_tl_001, user_emp_001, user_ext_001]
+
+  - id: DOC-023
+    title: "Project Beta: API Integration Guide"
+    category: tech
+    sub_type: tech.project
+    sensitivity: Low
+    language: mixed
+    project_id: project_beta
+    project_members: [user_emp_002, user_ext_001]
+    body: |
+      # Project Beta: API Integration Guide
+
+      Project ID: project_beta
+      Phase: Implementation
+      Lead: user_emp_002
+      Members: user_ext_001 (ExternalCo Integration Specialist)
+
+      ## 개요
+      Project Beta는 외부 파트너 API 통합 프로젝트로, BWCorp 내부 시스템과 협력사
+      시스템 간 데이터 동기화를 담당합니다.
+
+      ## 통합 대상 파트너
+      - PartnerA: 재고 정보 (REST API, 분당 30회 한도)
+      - PartnerB: 배송 추적 (Webhook 수신, IP whitelist 적용)
+      - PartnerC: 결제 정산 (gRPC, mTLS 인증)
+
+      ## 보안 요구사항
+      - 모든 외부 통신은 회사 egress proxy 경유
+      - API Key는 AWS Secrets Manager에서 동적 조회 (하드코딩 금지)
+      - Webhook payload는 HMAC-SHA256 검증 필수
+
+      ## 에러 처리 패턴
+      - 재시도: Exponential backoff (1s, 2s, 4s, 최대 5회)
+      - Circuit breaker: 60초 윈도우 50% 실패 시 30초 차단
+      - Dead Letter Queue: 최종 실패 메시지 보존, 알람 발송
+
+      ## 모니터링
+      - Dashboard: Datadog `project_beta_integration`
+      - 알람: PartnerA latency P99 > 5s, PartnerB 누락 > 1%
+
+      상세 partner-별 spec은 별도 문서 (PARTNER-{A,B,C}-INTEG)에서 관리.
+    expected_readers: [user_emp_002, user_ext_001]
+
+  - id: DOC-024
+    title: "Project Gamma: Initial PRD"
+    category: tech
+    sub_type: tech.project
+    sensitivity: High
+    language: mixed
+    project_id: project_gamma
+    project_members: [user_exec_001, user_tl_001]
+    body: |
+      # Project Gamma: Initial PRD
+
+      Project ID: project_gamma
+      Status: Pre-launch (Strategic Initiative)
+      Sensitivity: High — 외부 공개 금지
+      Sponsor: user_exec_001 (Tech Division VP)
+      Tech Lead: user_tl_001
+
+      ## Strategic Context
+      2027년 신규 사업 영역 진출을 위한 기술 기반 구축 프로젝트. 본 PRD는 임원회의에서
+      승인된 사업 방향에 따른 초기 기술 요구사항을 정리합니다.
+
+      ## 비즈니스 목표
+      - 신규 시장 진입 시점: 2027 Q2
+      - 초기 사용자 목표: 10,000 MAU
+      - Tech budget: KRW 8억 (FY2026 잔여 + FY2027 일부)
+
+      ## 핵심 기능 요구사항
+      1. 멀티 테넌시 아키텍처 (B2B SaaS)
+      2. 데이터 분리 보장 (테넌트 간 완전 격리)
+      3. 글로벌 latency P95 < 200ms (한국+동남아 4개국)
+
+      ## 위험 요소
+      - 인재 채용: 시니어 백엔드 2명 추가 필요 (FY2026 Q4까지)
+      - 외부 종속성: 글로벌 CDN 벤더 선정 필요
+      - 규제: 진출 국가별 데이터 주권 요구사항 (Legal 부서 협의 진행 중)
+
+      ## 다음 단계
+      - 2026-Q4: 상세 기술 설계 (Tech Lead 주도)
+      - 2027-Q1: PoC 구축
+      - 2027-Q2: MVP 출시
+
+      본 문서는 user_exec_001 + user_tl_001 외 공유 금지. 변경은 Tech Division Council
+      안건 상정 후.
+    expected_readers: [user_exec_001, user_tl_001]
+
+  - id: DOC-025
+    title: "Project Delta: Sprint Planning"
+    category: tech
+    sub_type: tech.project
+    sensitivity: Low
+    language: mixed
+    project_id: project_delta
+    project_members: [user_emp_001, user_emp_003]
+    body: |
+      # Project Delta: Sprint 14 Planning
+
+      Project ID: project_delta
+      Sprint: 14 (2026-10-21 ~ 2026-11-03)
+      Sprint Goal: 검색 결과 개인화 v1 출시
+      Members: user_emp_001 (Backend Lead), user_emp_003 (Frontend)
+
+      ## 지난 Sprint 회고
+      - 완료: 사용자 행동 로깅 파이프라인 구축
+      - 미완료: A/B 테스트 인프라 (다음 Sprint로 이월)
+      - 회고 액션: 외부 의존성 변경 시 사전 알림 체크리스트 추가
+
+      ## 이번 Sprint 백로그
+
+      ### Backend (user_emp_001)
+      - TICKET-2024: 개인화 추천 API 엔드포인트 (3pt)
+      - TICKET-2025: Redis 기반 사용자 컨텍스트 캐시 (5pt)
+      - TICKET-2026: 추천 결과 fallback 로직 (2pt)
+
+      ### Frontend (user_emp_003)
+      - TICKET-2027: 검색 결과 UI 개인화 표시 (3pt)
+      - TICKET-2028: A/B 실험 ID 노출 (1pt)
+      - TICKET-2029: 사용자 피드백 위젯 (2pt)
+
+      ## Capacity
+      - user_emp_001: 8pt (1일 휴가 반영)
+      - user_emp_003: 5pt (사내 교육 1일)
+      - 총 13pt 대상
+
+      ## Demo 일정
+      2026-11-03 (월) 15:00, Tech Division 시연.
+
+      블로커는 #project-delta Slack 채널에 즉시 공유.
