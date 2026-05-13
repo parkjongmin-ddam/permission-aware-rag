@@ -1,4 +1,6 @@
 # BWCorp Permission-aware RAG: Data Specification
+🇰🇷 한글 버전: [data-spec.ko.md](./data-spec.ko.md)
+
 
 This document defines the scenario, personas, document categories, and permission matrix
 for the permission-aware RAG system implemented in this project.
