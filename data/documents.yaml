@@ -975,3 +975,339 @@ documents:
       2026-11-03 (월) 15:00, Tech Division 시연.
 
       블로커는 #project-delta Slack 채널에 즉시 공유.
+
+# ─────────────────────────────────────────────────────────────────
+  # Category: finance (8 documents)
+  # All finance.* documents trigger heightened audit logging on access.
+  # ─────────────────────────────────────────────────────────────────
+
+  - id: DOC-026
+    title: "2026 Annual Budget Plan"
+    category: finance
+    sub_type: finance.budget
+    sensitivity: High
+    language: mixed
+    body: |
+      # 2026 Annual Budget Plan
+
+      Approval Date: 2025-12-15 (Board Approved)
+      Effective Period: 2026-01-01 ~ 2026-12-31
+      CFO Sign-off: (redacted)
+      Auditor Notification: user_aud_001
+
+      ## 총 예산
+      FY2026 운영 예산 KRW 480억 (전년 대비 +12% 성장 가정).
+
+      ## 부서별 배정
+      - Engineering: 200억 (인건비 140억, 인프라 35억, 도구·라이선스 25억)
+      - Sales & Marketing: 95억
+      - Operations (HR, Finance, Legal): 55억
+      - Customer Success: 50억
+      - R&D Strategic Initiative (Project Gamma): 80억
+
+      ## 주요 가정
+      - 인건비: 헤드카운트 +15% (530명 → 610명) 가정
+      - 매출 목표: 720억 (전년 580억 대비 +24%)
+      - 환율: USD 1,350원 / JPY 9.5원 기준
+
+      ## 분기별 점검
+      - Q1: 실적 vs 예산 5% 편차 검토
+      - Q2: 중간 조정 권한 (CFO + CEO 합의)
+      - Q3: H2 보정 예산 확정
+      - Q4: 연간 결산 준비
+
+      본 문서는 외부 공개 금지. 변경은 이사회 안건 상정 후.
+    expected_readers: [executive, auditor]
+
+  - id: DOC-027
+    title: "Q4 2026 Departmental Budget Allocation"
+    category: finance
+    sub_type: finance.budget
+    sensitivity: High
+    language: mixed
+    body: |
+      # Q4 2026 Departmental Budget Allocation
+
+      Period: 2026-10-01 ~ 2026-12-31
+      Approval: CFO + Division VPs (2026-09-30)
+      Audit Reference: AUDIT-2026-Q4-001
+
+      ## Q4 총 예산: KRW 125억
+
+      ## 부서별 Q4 배정 (단위: 억원)
+      - Engineering: 52
+        - 인건비 36
+        - 인프라 (AWS, 도구) 9
+        - 채용 marketing 4
+        - 외주 컨설팅 3 (Project Alpha 정산)
+      - Sales & Marketing: 25
+      - Operations: 14
+      - Customer Success: 13
+      - Project Gamma 별도: 21
+
+      ## 주요 사용 계획
+      - 인재 채용: Backend L2/L3 2명, Senior Frontend 1명
+      - 인프라 확장: 글로벌 latency 개선 위한 CDN 비용 +30%
+      - 보안 투자: Q3 위협 보고 권고 사항 (Dependency security, IAM 자동화)
+
+      ## 모니터링
+      주 단위 dashboard 자동 업데이트. 부서별 예산 사용률 80% 도달 시 finance 자동 알람.
+
+      본 문서는 임원, 부서장, finance, audit만 열람 가능.
+    expected_readers: [executive, auditor]
+
+  - id: DOC-028
+    title: "2025 Annual Financial Report (Audited)"
+    category: finance
+    sub_type: finance.statement
+    sensitivity: Critical
+    language: mixed
+    body: |
+      # 2025 Annual Financial Report (Audited)
+
+      External Auditor: ExternalAuditFirm Korea
+      Audit Opinion: Unqualified
+      Filing Date: 2026-03-15
+      Engagement ID: AUDIT-2025-FY-FINAL
+
+      ## Summary (KRW, 억원)
+      - 매출 (Revenue):              580
+      - 매출원가 (COGS):              198
+      - 영업이익 (Operating Income):  142
+      - 당기순이익 (Net Income):      108
+      - EBITDA Margin:               28.1%
+
+      ## Balance Sheet 요약
+      - 총 자산: 920
+      - 부채: 280
+      - 자본: 640
+      - 유동비율: 2.4
+
+      ## 주요 사건 (2025)
+      - Q2: 동남아 시장 진출 (베트남 법인 설립)
+      - Q3: 시리즈 C 펀딩 종료 (150억 유치)
+      - Q4: 신규 솔루션 출시로 매출 +35% 성장
+
+      ## Audit Findings
+      - Material Weakness: 없음
+      - Significant Deficiencies: 2건 (보고서 부록 D)
+        - SD-01: 재고 평가 절차 일부 문서화 미흡
+        - SD-02: Vendor 지급 승인 권한 매트릭스 재검토 권고
+
+      ## 후속 조치
+      SD-01, SD-02 대응 plan은 2026 Q1까지 완료 예정. 분기 점검은 audit committee.
+
+      본 문서는 외부 공개 (재무공시) 전 단계. 무단 유출 시 회사 사규 및 자본시장법 위반.
+    expected_readers: [executive, auditor]
+
+  - id: DOC-029
+    title: "Q3 2026 P&L Statement"
+    category: finance
+    sub_type: finance.statement
+    sensitivity: Critical
+    language: mixed
+    body: |
+      # Q3 2026 P&L Statement
+
+      Period: 2026-07-01 ~ 2026-09-30
+      Status: Internal Draft (External 공시 전)
+      Prepared By: Finance Team
+      Audit Notification: user_aud_001
+
+      ## Revenue (KRW, 억원)
+      - Subscription: 145 (전년 동기 +28%)
+      - Professional Services: 32
+      - 기타: 8
+      - 총 매출: 185
+
+      ## Cost of Revenue
+      - Hosting & Infrastructure: 18
+      - 외주 인건비 (Professional Services): 12
+      - 기타 직접비: 5
+      - 총 COGS: 35
+
+      ## Gross Profit: 150 (Gross Margin 81.1%)
+
+      ## OpEx
+      - R&D: 52 (Engineering 인건비 + 도구)
+      - Sales & Marketing: 28
+      - G&A: 14
+      - Project Gamma 별도: 18 (전략 투자)
+      - 총 OpEx: 112
+
+      ## Operating Income: 38 (Op Margin 20.5%)
+
+      ## YTD 누적 (2026 1~9월)
+      - 매출: 520
+      - 영업이익: 105
+
+      ## 주요 코멘트
+      Project Gamma 투자로 Q3 OpEx 일시 상승. Q4 추가 투자 반영 시 연간 Op Margin 22% 목표 가능.
+
+      본 문서는 분기 공시 (2026-11-15) 전 단계. 임원·감사 외 공유 금지.
+    expected_readers: [executive, auditor]
+
+  - id: DOC-030
+    title: "Expense Report: user_emp_001 (2026-09)"
+    category: finance
+    sub_type: finance.expense
+    sensitivity: Medium
+    language: mixed
+    subject: user_emp_001
+    body: |
+      # Expense Report: user_emp_001 (2026-09)
+
+      Submitted By: user_emp_001 (김민지, Backend Engineer L2)
+      Department: Engineering
+      Period: 2026-09-01 ~ 2026-09-30
+      Total: KRW 487,000
+      Approval Status: Approved (user_tl_001, 2026-10-05)
+
+      ## 항목별 내역
+
+      ### 출장 (Project Alpha 관련)
+      - 2026-09-12 KTX 서울-부산 (외주사 본사 미팅): 95,000
+      - 2026-09-12 부산 1박 호텔: 132,000
+      - 2026-09-13 KTX 부산-서울: 95,000
+
+      ### 도서·교육
+      - 2026-09-18 Designing Data-Intensive Applications (book): 45,000
+      - 2026-09-22 PyCon Korea 2026 등록비: 80,000
+
+      ### 식대 (야근)
+      - 2026-09-25 야근 식대 (장애 대응): 25,000
+      - 2026-09-28 야근 식대 (Sprint 마무리): 15,000
+
+      ## 첨부
+      영수증 9건, expense.bwcorp.local/EXP-2026-09-001 참조.
+
+      ## 정책 준수
+      - 출장: Travel Policy v2 준수 ✓
+      - 도서: 연간 한도 800,000원 중 누적 320,000원 (40%)
+
+      본 expense report는 본인, 직속 상사, finance 부서, auditor만 열람 가능.
+    expected_readers: [user_emp_001, auditor]
+
+  - id: DOC-031
+    title: "Expense Report: user_emp_002 (2026-09)"
+    category: finance
+    sub_type: finance.expense
+    sensitivity: Medium
+    language: mixed
+    subject: user_emp_002
+    body: |
+      # Expense Report: user_emp_002 (2026-09)
+
+      Submitted By: user_emp_002 (박종현, Marketing Specialist)
+      Department: Marketing
+      Period: 2026-09-01 ~ 2026-09-30
+      Total: KRW 685,000
+      Approval Status: Approved (Marketing Director 위임, 2026-10-08)
+
+      ## 항목별 내역
+
+      ### 행사·제휴
+      - 2026-09-08 파트너사 미팅 식대 (3인): 145,000
+      - 2026-09-15 가을 캠페인 launch 행사 케이터링: 280,000
+      - 2026-09-22 인플루언서 미팅 카페: 35,000
+
+      ### 광고·소재 제작
+      - 2026-09-20 캠페인 영상 외주 - 1차 지급분: 150,000
+
+      ### 출장
+      - 2026-09-25 코엑스 마케팅 컨퍼런스 참가: 75,000
+
+      ## 첨부
+      영수증 7건, expense.bwcorp.local/EXP-2026-09-024 참조.
+
+      ## 정책 준수
+      - 행사비: 사전 승인 완료 (Marketing Director, 2026-09-01)
+      - 영상 외주: Marketing budget 내 (Q3 잔여 활용)
+
+      본 expense report는 본인, 직속 상사, finance 부서, auditor만 열람 가능.
+    expected_readers: [user_emp_002, auditor]
+
+  - id: DOC-032
+    title: "Expense Report: user_tl_001 (2026-09)"
+    category: finance
+    sub_type: finance.expense
+    sensitivity: Medium
+    language: mixed
+    subject: user_tl_001
+    body: |
+      # Expense Report: user_tl_001 (2026-09)
+
+      Submitted By: user_tl_001 (이수진, Backend Team Lead)
+      Department: Engineering
+      Period: 2026-09-01 ~ 2026-09-30
+      Total: KRW 1,245,000
+      Approval Status: Approved (user_exec_001, 2026-10-07)
+
+      ## 항목별 내역
+
+      ### Team 행사
+      - 2026-09-10 팀 빌딩 디너 (7인): 420,000
+      - 2026-09-25 팀 1on1 카페 (개별 5건): 75,000
+
+      ### 외부 미팅
+      - 2026-09-15 ExternalCo 컨설턴트 점심: 95,000
+      - 2026-09-18 채용 후보자 인터뷰 식대: 110,000
+
+      ### 출장 (Project Alpha)
+      - 2026-09-12 KTX 서울-부산 왕복: 190,000
+      - 2026-09-12 부산 1박 호텔: 145,000
+      - 2026-09-19 도쿄 1박 출장 (협력사 방문): 210,000
+
+      ## 첨부
+      영수증 12건, expense.bwcorp.local/EXP-2026-09-007 참조.
+
+      ## 정책 준수
+      - 출장: 사전 승인 완료 (Tech VP, 2026-09-05)
+      - 팀 행사: Team Lead 분기 한도 500,000원 내 (Q3 누적 380,000원)
+
+      본 expense report는 본인, 직속 상사, finance 부서, auditor만 열람 가능.
+    expected_readers: [user_tl_001, auditor]
+
+  - id: DOC-033
+    title: "2025 Corporate Tax Filing"
+    category: finance
+    sub_type: finance.tax
+    sensitivity: Critical
+    language: mixed
+    body: |
+      # 2025 Corporate Tax Filing (법인세 신고)
+
+      Tax Year: 2025-01-01 ~ 2025-12-31
+      Filing Deadline: 2026-03-31
+      Filed Date: 2026-03-28
+      Filing Status: Accepted (국세청 접수)
+      Tax Advisor: External Tax Firm (계약 ID: ADV-2025-TAX-001)
+
+      ## 주요 금액 (KRW, 억원)
+      - 익금 (Gross Income):       580
+      - 손금 (Deductions):         472
+      - 과세표준 (Taxable Income): 108
+      - 산출세액 (Calculated Tax):  23.8
+      - 공제·감면 (Credits):        4.2
+      - 결정세액 (Final Tax):       19.6
+
+      ## 공제·감면 내역
+      - 연구개발비 세액공제: 3.2 (R&D 투자 인정)
+      - 고용증대세액공제: 0.8 (신규 정규직 +85명)
+      - 기타: 0.2
+
+      ## 분납 일정
+      - 2026-04-15 (1차): 9.8
+      - 2026-06-30 (2차): 9.8
+
+      ## 첨부 서류
+      - 재무제표 (감사보고서 포함)
+      - 세무조정계산서
+      - 부속명세서 (총 47종)
+
+      ## 주의 사항
+      국세청 사후검증 가능성 — 5년간 관련 자료 보존 의무. 외부 공개 절대 금지
+      (국세기본법 위반 사안).
+
+      본 문서는 audit 위탁 절차 외 누구에게도 공유 금지.
+    expected_readers: [auditor]
