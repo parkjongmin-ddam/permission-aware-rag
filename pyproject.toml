@@ -1,13 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "permission-aware-rag"
 version = "0.1.0"
-description = "Permission-aware RAG with LangGraph for enterprise document search"
+description = "A LangGraph-based RAG system with multi-dimensional permission filtering."
 readme = "README.md"
 requires-python = ">=3.13"
-license = { file = "LICENSE" }
-authors = [{ name = "Jongmin Park" }]
-
+license = {text = "MIT"}
+authors = [
+    {name = "Jongmin Park", email = "jongminoov@gmail.com"}
+]
 dependencies = [
+    # Web framework
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    # LangGraph / LangChain
     "langgraph>=0.2",
     "langchain>=0.3",
     "langchain-anthropic>=0.3",
@@ -15,15 +26,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0",
+    "pytest>=8.3",
     "pytest-asyncio>=0.24",
-    "ruff>=0.7",
-    "mypy>=1.13",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.11",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/permission_aware_rag"]
@@ -33,5 +41,4 @@ line-length = 100
 target-version = "py313"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RET"]
-
+select = ["E", "F", "I", "N", "W", "UP"]
