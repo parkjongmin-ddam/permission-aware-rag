@@ -642,10 +642,171 @@ sub-type 검사 이전에 보편적으로 적용된다(섹션 4.5의 평가 순�
 
 ## 6. 샘플 문서
 
-*본 섹션은 섹션 3에 정의된 모든 카테고리 × sub-type 조합을 다루는 30~50개의 대표
-문서를 카탈로그화하며, 섹션 4의 패턴을 시연하는 구체적인 권한 메타데이터를 포함한다.
-카탈로그는 별도 작업 블록에서 생성되며 M1 마일스톤에서 추적된다. 프로젝트 README
-참조.*
+## 6. 샘플 문서
+
+본 섹션은 섹션 3에 정의된 24개 카테고리 × sub-type 조합을 모두 커버하는 45개의
+가상 문서를 카탈로그화한다. 카탈로그는 세 가지 목적을 갖는다.
+
+1. **구체적 그라운딩** — 섹션 2~4의 추상적 패턴을 실 예로 연결
+2. **테스트 fixture 소스** — M2 구현 단계에서 `data/documents.yaml`(또는 등가물)로 변환됨
+3. **검증 참조** — 각 문서의 `expected_readers` 필드가 코퍼스 대비 권한 매트릭스를
+   자동 테스트할 수 있게 함
+
+### 6.1 문서 스키마
+
+각 항목은 다음 필드를 사용한다.
+
+| 필드 | 필수 여부 | 설명 |
+|---|---|---|
+| `id` | 필수 | 고유 식별자 (예: `DOC-001`) |
+| `title` | 필수 | 사람이 읽을 수 있는 문서명 |
+| `category` | 필수 | hr, security, tech, finance, marketing, legal 중 하나 |
+| `sub_type` | 필수 | 점 구분 sub-type (예: `hr.policy`) |
+| `sensitivity` | 필수 | Low / Medium / High / Critical |
+| `subject` | 조건부 | self-access 문서용 사용자 ID (hr.personnel, finance.expense) |
+| `project_id` | 조건부 | `tech.project`용 프로젝트 식별자 |
+| `project_members` | 조건부 | 프로젝트 접근 가능한 사용자 ID 리스트 |
+| `parties` | 조건부 | case 기반 접근(legal.*)용 사용자 ID 리스트 |
+| `case_id` | 조건부 | 법무 문서의 case 식별자 |
+| `stakeholders` | 조건부 | security.incident의 명시된 접근자 사용자 ID 리스트 |
+| `severity` | 조건부 | security.incident용 (low / medium / high / critical) |
+| `executive_briefed` | 조건부 | security.incident 임원 브리핑 여부 (boolean) |
+| `disclosure_level` | 조건부 | legal.litigation용 (`executive_briefing` 등) |
+| `tags` | 선택 | 횡단 접근용 보조 태그 (예: `security`) |
+| `expected_readers` | 필수 | 해당 문서를 읽을 것으로 기대되는 페르소나 ID (테스트 검증용) |
+
+카탈로그에서 참조되는 사용자 ID는 섹션 2에서 정의된 것과 일치한다:
+`user_emp_001/002/003`, `user_tl_001`, `user_exec_001`, `user_sec_001`,
+`user_ext_001`, `user_aud_001`, `user_hrs_001`.
+
+### 6.2 카테고리별 카탈로그
+
+#### 6.2.1 `hr` — Human Resources (8개 문서)
+
+| ID | Title | Sub-type | 민감도 | 특수 속성 | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-001 | Employee Handbook 2026 | `hr.policy` | Low | — | 전 인증 employee+ |
+| DOC-002 | Leave Policy v3.2 | `hr.policy` | Low | — | 전 인증 employee+ |
+| DOC-003 | Remote Work Guidelines | `hr.policy` | Low | — | 전 인증 employee+ |
+| DOC-004 | 2026 Salary Band Reference | `hr.compensation` | High | — | executive, hr_specialist, auditor |
+| DOC-005 | Bonus Structure FY2026 | `hr.compensation` | High | — | executive, hr_specialist, auditor |
+| DOC-006 | Performance Review: user_emp_001 (2025) | `hr.personnel` | Critical | `subject: user_emp_001` | user_emp_001 (본인), hr_specialist, auditor |
+| DOC-007 | Performance Review: user_tl_001 (2025) | `hr.personnel` | Critical | `subject: user_tl_001` | user_tl_001 (본인), hr_specialist, auditor |
+| DOC-008 | Backend Engineer Hiring Pipeline Q4 2026 | `hr.recruitment` | Medium | — | hr_specialist, 채용 중인 team_lead (`is_hiring: true`), executive |
+
+#### 6.2.2 `security` — Security & InfoSec (7개 문서)
+
+| ID | Title | Sub-type | 민감도 | 특수 속성 | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-009 | Password Policy v2.1 | `security.policy` | Low | — | 전 인증 employee+ |
+| DOC-010 | Information Security Code of Conduct | `security.policy` | Low | — | 전 인증 employee+ |
+| DOC-011 | INC-2026-08-001: Suspicious Login Attempt | `security.incident` | Critical | `severity: high`, `stakeholders: [user_exec_001]` | security_officer, user_exec_001 (stakeholder) |
+| DOC-012 | INC-2026-09-003: Data Exfiltration Attempt | `security.incident` | Critical | `severity: critical`, `executive_briefed: true`, `stakeholders: [user_exec_001]` | security_officer, user_exec_001, auditor |
+| DOC-013 | INC-2026-09-005: Insider Threat Investigation | `security.incident` | Critical | `severity: high`, `stakeholders: [user_sec_001]` | security_officer only (임원 브리핑 X) |
+| DOC-014 | Q3 2026 Threat Landscape Brief | `security.threat_intel` | High | — | security_officer only |
+| DOC-015 | SOC2 Type II Audit Report 2025 | `security.compliance` | High | `tags: [audit]` | security_officer, auditor |
+
+#### 6.2.3 `tech` — Technology & Engineering (10개 문서)
+
+| ID | Title | Sub-type | 민감도 | 특수 속성 | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-016 | BWCorp Infrastructure Architecture v3 | `tech.architecture` | Medium | — | Tech 부서 employee+, executive (Tech 디비전) |
+| DOC-017 | Microservices Communication Patterns | `tech.architecture` | Medium | — | Tech 부서 employee+ |
+| DOC-018 | Payment API v2 Specification | `tech.api` | Low | — | 전 인증 employee+ |
+| DOC-019 | SSO Authentication API Guide | `tech.api` | Low | — | 전 인증 employee+ |
+| DOC-020 | Production Incident Response Playbook | `tech.runbook` | Medium | — | Tech 부서 employee+ |
+| DOC-021 | Database Migration Procedures | `tech.runbook` | Medium | — | Tech 부서 employee+ |
+| DOC-022 | Project Alpha: Architecture Design | `tech.project` | Medium | `project_id: project_alpha`, `project_members: [user_tl_001, user_emp_001, user_ext_001]` | 명시된 project members |
+| DOC-023 | Project Beta: API Integration Guide | `tech.project` | Low | `project_id: project_beta`, `project_members: [user_emp_002, user_ext_001]` | 명시된 project members |
+| DOC-024 | Project Gamma: Initial PRD | `tech.project` | High | `project_id: project_gamma`, `project_members: [user_exec_001, user_tl_001]` | 명시된 project members |
+| DOC-025 | Project Delta: Sprint Planning | `tech.project` | Low | `project_id: project_delta`, `project_members: [user_emp_001, user_emp_003]` | 명시된 project members |
+
+#### 6.2.4 `finance` — Finance & Accounting (8개 문서)
+
+모든 `finance.*` 문서는 접근 시 강화된 감사 로깅을 트리거한다.
+
+| ID | Title | Sub-type | 민감도 | 특수 속성 | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-026 | 2026 Annual Budget Plan | `finance.budget` | High | — | executive, auditor, finance 부서 |
+| DOC-027 | Q4 2026 Departmental Budget Allocation | `finance.budget` | High | — | executive, auditor, finance 부서 |
+| DOC-028 | 2025 Annual Financial Report (Audited) | `finance.statement` | Critical | — | executive, auditor, finance 부서 |
+| DOC-029 | Q3 2026 P&L Statement | `finance.statement` | Critical | — | executive, auditor, finance 부서 |
+| DOC-030 | Expense Report: user_emp_001 (2026-09) | `finance.expense` | Medium | `subject: user_emp_001` | user_emp_001 (본인), finance 부서, auditor |
+| DOC-031 | Expense Report: user_emp_002 (2026-09) | `finance.expense` | Medium | `subject: user_emp_002` | user_emp_002 (본인), finance 부서, auditor |
+| DOC-032 | Expense Report: user_tl_001 (2026-09) | `finance.expense` | Medium | `subject: user_tl_001` | user_tl_001 (본인), finance 부서, auditor |
+| DOC-033 | 2025 Corporate Tax Filing | `finance.tax` | Critical | — | auditor, finance 부서 only |
+
+#### 6.2.5 `marketing` — Marketing & Brand (6개 문서)
+
+| ID | Title | Sub-type | 민감도 | 특수 속성 | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-034 | Fall 2026 Campaign Plan | `marketing.campaign` | Low | — | 전 인증 employee+ |
+| DOC-035 | New SaaS Product Launch Campaign | `marketing.campaign` | Low | — | 전 인증 employee+ |
+| DOC-036 | BWCorp Brand Guidelines 2026 | `marketing.brand` | Low | — | contractor 포함 전 인증 사용자 |
+| DOC-037 | Logo Usage Manual | `marketing.brand` | Low | — | contractor 포함 전 인증 사용자 |
+| DOC-038 | 2026 IT Solutions Market Analysis | `marketing.research` | Medium | — | Marketing 부서, executive |
+| DOC-039 | Competitive Landscape Q3 2026 | `marketing.research` | Medium | — | Marketing 부서, executive |
+
+#### 6.2.6 `legal` — Legal & Compliance (6개 문서)
+
+| ID | Title | Sub-type | 민감도 | 특수 속성 | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-040 | ExternalCo Consulting Service Agreement | `legal.contract` | High | `parties: [user_exec_001, user_ext_001]` | Legal 부서, 명시된 parties |
+| DOC-041 | Cloud Vendor MSA 2026 | `legal.contract` | High | `parties: [user_exec_001, user_tl_001]` | Legal 부서, 명시된 parties |
+| DOC-042 | PIPA Compliance Report 2026 | `legal.regulatory` | High | — | Legal 부서, executive, auditor |
+| DOC-043 | GDPR Applicability Legal Opinion | `legal.opinion` | Critical | `parties: [user_exec_001]`, `case_id: ADV-2026-014` | Legal 부서, 명시된 parties |
+| DOC-044 | ExternalCo Dispute Case 2026-001 | `legal.litigation` | Critical | `case_id: CASE-2026-001`, `parties: [user_exec_001]`, `disclosure_level: executive_briefing` | Legal 부서, 명시된 parties, executive (브리핑 시) |
+| DOC-045 | IP Infringement Defense Case 2025-007 | `legal.litigation` | Critical | `case_id: CASE-2025-007`, `parties: [user_tl_001]` | Legal 부서, user_tl_001 only |
+
+### 6.3 패턴 검증 맵
+
+이 표는 섹션 4의 각 권한 패턴을 어떤 특정 문서가 테스트하는지 교차 참조한다.
+M2 구현 단계에서 각 행은 하나 이상의 자동 테스트 케이스로 변환된다.
+
+| 권한 패턴 | 테스트 문서 | 기대 동작 |
+|---|---|---|
+| **메타데이터 없을 시 default-deny** | (합성 — 추가 예정) | 모든 사용자 거부, 검색 결과에서 제외 |
+| **Self-access 카브아웃 (hr.personnel)** | DOC-006, DOC-007 | subject 사용자만 읽기; hr_specialist는 전체, employee는 본인만 |
+| **Self-access 카브아웃 (finance.expense)** | DOC-030, DOC-031, DOC-032 | subject 사용자 읽기; finance 부서·auditor는 전체; 그 외 거부 |
+| **횡단 ReBAC (security.incident)** | DOC-011, DOC-012, DOC-013 | security_officer 항상; 명시된 stakeholders; executive는 `executive_briefed: true`인 경우만 (DOC-012) |
+| **Threat intel 제한** | DOC-014 | security_officer only; auditor도 거부 |
+| **프로젝트 스코프** | DOC-022, DOC-023, DOC-024, DOC-025 | 명시된 `project_members`만; contractor(user_ext_001)는 DOC-022 + DOC-023 접근 가능, DOC-024 + DOC-025 거부 |
+| **강화 감사 로깅 (finance)** | DOC-026 ~ DOC-033 | 역할 무관 모든 접근이 감사 메타데이터와 함께 로깅 |
+| **Case 기반 parties (legal.contract)** | DOC-040, DOC-041 | 명시된 parties + Legal 부서만 |
+| **Case 기반 parties (legal.litigation)** | DOC-044, DOC-045 | 명시된 parties + Legal 부서만; DOC-044는 disclosure_level로 executive도 가시 |
+| **폭넓은 베이스라인 (marketing.brand)** | DOC-036, DOC-037 | contractor 포함 전 인증 사용자 |
+| **Compensation 제한** | DOC-004, DOC-005 | 다른 hr.* 접근권이 있더라도 employee/team_lead/contractor는 거부 |
+| **Contractor 시간 만료** | (세션 레벨 테스트 — Rule 4) | `NOW() > user.end_date` 시 모든 접근 거부 |
+| **감사 로깅 wrap (auditor)** | user_aud_001이 접근한 모든 문서 | grant와 함께 감사 로그 엔트리 생성 |
+
+### 6.4 커버리지 검증
+
+| Category × Sub-type | 문서 수 | 커버리지 |
+|---|---|---|
+| `hr.policy` | 3 | ✅ |
+| `hr.compensation` | 2 | ✅ |
+| `hr.personnel` | 2 | ✅ |
+| `hr.recruitment` | 1 | ✅ |
+| `security.policy` | 2 | ✅ |
+| `security.incident` | 3 | ✅ |
+| `security.threat_intel` | 1 | ✅ |
+| `security.compliance` | 1 | ✅ |
+| `tech.architecture` | 2 | ✅ |
+| `tech.api` | 2 | ✅ |
+| `tech.runbook` | 2 | ✅ |
+| `tech.project` | 4 | ✅ |
+| `finance.budget` | 2 | ✅ |
+| `finance.statement` | 2 | ✅ |
+| `finance.expense` | 3 | ✅ |
+| `finance.tax` | 1 | ✅ |
+| `marketing.campaign` | 2 | ✅ |
+| `marketing.brand` | 2 | ✅ |
+| `marketing.research` | 2 | ✅ |
+| `legal.contract` | 2 | ✅ |
+| `legal.regulatory` | 1 | ✅ |
+| `legal.opinion` | 1 | ✅ |
+| `legal.litigation` | 2 | ✅ |
+| **총** | **45** | **24/24 sub-type 커버됨** |
 
 ## 7. Future Extensions
 
