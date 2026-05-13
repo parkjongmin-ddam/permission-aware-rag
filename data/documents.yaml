@@ -299,3 +299,258 @@ documents:
 
       문의: user_hrs_001 (HR Recruiter)
     expected_readers: [hr_specialist, executive, user_tl_001]
+
+# ─────────────────────────────────────────────────────────────────
+  # Category: security (7 documents)
+  # ─────────────────────────────────────────────────────────────────
+
+  - id: DOC-009
+    title: "Password Policy v2.1"
+    category: security
+    sub_type: security.policy
+    sensitivity: Low
+    language: ko
+    body: |
+      # BWCorp 비밀번호 정책 v2.1
+
+      본 정책은 2026년 1월 1일부로 시행되며, BWCorp 모든 시스템 계정에 적용됩니다.
+
+      ## 비밀번호 요구사항
+      - 최소 12자 이상
+      - 영문 대/소문자, 숫자, 특수문자 4종 중 3종 이상 조합
+      - 사용자 ID, 이름, 사내 메일 도메인 포함 금지
+      - 직전 5회 사용 비밀번호 재사용 금지
+
+      ## MFA(다중요소 인증)
+      - 모든 사내 시스템 접근 시 필수 적용
+      - 인증 수단: OTP 앱(Microsoft Authenticator), 보안 키(YubiKey)
+      - SMS 인증은 임원·VIP 계정에서 금지 (2026 강화 사항)
+
+      ## 정기 변경
+      - 일반 계정: 90일마다 변경
+      - 관리자 계정: 60일마다 변경
+      - 위반 시 자동 잠금
+
+      ## 분실/유출 시 대응
+      - 즉시 security-help@bwcorp.local 신고
+      - 관련 계정 즉시 잠금 및 강제 비밀번호 초기화
+
+      위반 사실 적발 시 정보보안 위반 행위로 인사 조치 대상입니다.
+    expected_readers: [employee, team_lead, executive, security_officer, contractor, auditor, hr_specialist]
+
+  - id: DOC-010
+    title: "Information Security Code of Conduct"
+    category: security
+    sub_type: security.policy
+    sensitivity: Low
+    language: ko
+    body: |
+      # BWCorp 정보보안 행동강령
+
+      본 강령은 모든 임직원, 협력업체, 외주 인력에게 적용되며, 인사 평가 및 계약 갱신 시 준수 여부가 반영됩니다.
+
+      ## 기본 원칙
+      1. 회사 정보는 회사 자산이며, 업무 목적 외 사용을 금지합니다.
+      2. 본인의 권한 범위 내에서만 데이터를 조회·처리합니다.
+      3. 권한 외 데이터 접근이 발생한 경우 즉시 신고합니다.
+
+      ## 금지 행위
+      - 개인 클라우드(Google Drive, Dropbox 등)에 사내 자료 업로드
+      - 회사 PC에 인가되지 않은 소프트웨어 설치
+      - 회의 내용·문서를 외부로 무단 공유
+      - 동료 계정 도용 또는 비밀번호 공유
+
+      ## 신고 의무
+      보안 위반·의심 행위 인지 시 24시간 이내 신고:
+      - 채널: security-incident@bwcorp.local
+      - 익명 신고도 가능 (사내 핫라인 #5500)
+
+      ## 위반 시 조치
+      경미 사안: 경고 및 재교육 / 중대 사안: 인사위원회 회부 / 형사 고발 가능 사안 포함
+
+      본 강령은 매년 갱신되며, 갱신본 게시 시점부터 즉시 발효됩니다.
+    expected_readers: [employee, team_lead, executive, security_officer, contractor, auditor, hr_specialist]
+
+  - id: DOC-011
+    title: "INC-2026-08-001: Suspicious Login Attempt"
+    category: security
+    sub_type: security.incident
+    sensitivity: Critical
+    language: mixed
+    severity: high
+    executive_briefed: false
+    stakeholders: [user_exec_001]
+    body: |
+      # INC-2026-08-001: Suspicious Login Attempt
+
+      Status: Closed (False positive escalation)
+      Severity: High
+      Reporter: SOC Alert (auto-detected)
+      Lead: user_sec_001
+      Notified Stakeholder: user_exec_001 (Tech Division VP)
+
+      ## Timeline
+      - 2026-08-14 03:47 KST: user_exec_001 계정에 대해 비정상 IP(러시아 모스크바)에서 로그인 시도 3회 실패
+      - 2026-08-14 03:52 KST: 자동 SOC 알람 발생, 계정 일시 잠금
+      - 2026-08-14 09:15 KST: user_sec_001 조사 착수, user_exec_001 본인 확인 진행
+
+      ## 조사 결과
+      - user_exec_001 본인은 한국에 거주, 해당 시각 휴면 상태
+      - 시도된 IP는 알려진 commodity 봇넷 IP로 식별 (Threat Intel DB 매칭)
+      - 비밀번호 정확도 검증 결과: 무작위 추측 패턴, 실제 자격증명 유출 정황 없음
+
+      ## 조치
+      - user_exec_001 비밀번호 재설정 및 MFA 토큰 재발급 완료
+      - 해당 IP 대역 IP block list 추가
+      - SOC 알람 임계치 재검토 (false positive 빈도 대응)
+
+      ## 후속 조치
+      임원 계정 대상 conditional access 정책 강화 검토 — 별도 ticket SEC-2026-Q3-042 발행.
+    expected_readers: [security_officer, user_exec_001]
+
+  - id: DOC-012
+    title: "INC-2026-09-003: Data Exfiltration Attempt"
+    category: security
+    sub_type: security.incident
+    sensitivity: Critical
+    language: mixed
+    severity: critical
+    executive_briefed: true
+    stakeholders: [user_exec_001]
+    body: |
+      # INC-2026-09-003: Data Exfiltration Attempt
+
+      Status: Contained, investigation ongoing
+      Severity: Critical
+      Executive Briefed: Yes (user_exec_001, 2026-09-12 10:00 KST)
+      Lead: user_sec_001
+      Audit Notification: user_aud_001 (per finance.compliance impact)
+
+      ## Summary
+      2026-09-10 ~ 2026-09-11에 걸쳐 사내 파일 서버에서 외부 cloud storage로
+      비정상적인 대용량 데이터 송신 시도가 탐지되었으며, DLP 솔루션에 의해 차단되었습니다.
+
+      ## Timeline
+      - 2026-09-10 22:15 KST: 사내 endpoint에서 외부 도메인으로 1.2GB 송신 시도 → DLP 차단
+      - 2026-09-11 01:03 KST: 동일 endpoint에서 다른 도메인으로 재시도 → 차단
+      - 2026-09-11 09:00 KST: SOC 분석가가 user_sec_001에게 escalate
+      - 2026-09-12 08:30 KST: 해당 endpoint 격리, 사용자 계정 잠금
+      - 2026-09-12 10:00 KST: user_exec_001 brief
+
+      ## 추가 조사 사항
+      - 송신 시도된 파일: finance.budget 카테고리 문서 다수 포함
+      - 송신 endpoint 사용자: 외부 컨설팅 협력자(user_ext_001 외 1명)
+      - 정황상 contractor 계정의 권한 범위 초과 의심
+
+      ## 향후 단계
+      - 디지털 포렌식 외부 업체 의뢰 예정
+      - contractor 계정 재검토 및 권한 회수 절차 진행
+      - 법무 부서와 조치 범위 협의 (legal.litigation 가능성)
+    expected_readers: [security_officer, user_exec_001, auditor]
+
+  - id: DOC-013
+    title: "INC-2026-09-005: Insider Threat Investigation"
+    category: security
+    sub_type: security.incident
+    sensitivity: Critical
+    language: mixed
+    severity: high
+    executive_briefed: false
+    stakeholders: [user_sec_001]
+    body: |
+      # INC-2026-09-005: Insider Threat Investigation
+
+      Status: Active investigation
+      Severity: High
+      Executive Briefed: No (sensitive — pre-disclosure phase)
+      Lead: user_sec_001
+      Restricted Access: security_officer only
+
+      ## Background
+      2026-09-15부터 특정 임직원의 사내 시스템 접근 패턴에서 이상 징후가 발견되었습니다.
+      본 문서는 조사 진행 중인 사안이며, 대상자에게 통지 전 단계입니다.
+
+      ## 관찰된 이상 패턴
+      - 본인 업무 범위 외 카테고리(legal.contract, finance.statement) 반복 검색
+      - 비정상 시각(02:00 ~ 04:00 KST) 접근 빈도 증가
+      - 평소 사용하지 않던 endpoint에서 로그인 시도
+
+      ## 현재 단계
+      - 행동 로그 분석 (지난 90일)
+      - 협력 부서: HR, Legal (단, 사전 통지 없이 진행)
+      - 외부 변호사 자문 진행 중 (사내 절차상 권리 보호)
+
+      ## 보안 주의
+      본 문서 및 관련 사실은 security_officer 외 누구에게도 공유 금지.
+      임원 brief 시점은 사안 명확화 후 user_sec_001이 별도 판단.
+
+      향후 조치 방향은 사안 확정 시 별도 ticket 발행 예정.
+    expected_readers: [security_officer]
+
+  - id: DOC-014
+    title: "Q3 2026 Threat Landscape Brief"
+    category: security
+    sub_type: security.threat_intel
+    sensitivity: High
+    language: mixed
+    body: |
+      # Q3 2026 Threat Landscape Brief
+
+      Classification: Internal — security_officer only
+      Author: user_sec_001
+      Period Covered: 2026-07-01 ~ 2026-09-30
+
+      ## 주요 트렌드
+      1. 공급망 공격 증가: NPM·PyPI 패키지 변조 사례 Q2 대비 +40%. 사내 dependency scan 강화 필요.
+      2. AI 기반 피싱 정교화: Voice cloning을 통한 임원 사칭 사례 국내에서도 보고 시작. 외부 입금·자료 요청 시 별도 채널 확인 절차 강화.
+      3. 클라우드 권한 오남용: 국내 IT 기업 대상 IAM 미설정으로 인한 데이터 노출 사건 3건 보고.
+
+      ## BWCorp 영향도
+      - 공급망: Build 파이프라인에서 의존성 무결성 검증 도입 (Q4 작업)
+      - 피싱: 임원 대상 simulation 훈련 Q4에 실시 예정
+      - IAM: Q3 점검 결과 사내 정책 적정, 자동 회수(deprovisioning) 자동화 미흡 → Q4 개선 과제
+
+      ## 권고
+      Q4 보안 투자 우선순위: (1) Dependency security, (2) IAM 자동화, (3) 임원 보안 훈련
+
+      상세 자료는 별도 첨부 (사내 위키 SEC-Q3-2026 페이지 참조).
+    expected_readers: [security_officer]
+
+  - id: DOC-015
+    title: "SOC2 Type II Audit Report 2025"
+    category: security
+    sub_type: security.compliance
+    sensitivity: High
+    language: mixed
+    tags: [audit]
+    body: |
+      # SOC2 Type II Audit Report 2025
+
+      Audit Firm: ExternalAuditFirm Korea
+      Audit Period: 2025-01-01 ~ 2025-12-31
+      Audit Engagement ID: AUDIT-2025-SOC2-001
+      BWCorp Lead: user_sec_001
+      External Auditor Lead: (redacted, 외부 감사 파트너)
+
+      ## Scope
+      - Security, Availability, Confidentiality (3 of 5 Trust Service Criteria)
+      - Coverage: BWCorp 사내 모든 production 시스템 및 운영 프로세스
+
+      ## 주요 발견 사항
+      1. Effective Controls (94개 중 91개 통과)
+         - 접근 제어, 변경 관리, 사고 대응 프로세스 적절히 운영
+         - MFA 100% 적용 확인 (2025-06부터)
+
+      2. Deficiencies (3건)
+         - DEF-01: 비활성 계정 자동 회수가 부분적 (정책상 90일, 실제 일부 120일 초과)
+         - DEF-02: Vendor 접근 권한 정기 재검토 주기 불일치
+         - DEF-03: backup 복원 테스트 분기별 1회 → 실제 연 2회 수행
+
+      ## 조치 계획
+      - DEF-01: 2026 Q1까지 deprovisioning 자동화 완료
+      - DEF-02: Vendor access review를 분기별 1회로 정기화 (이미 시행)
+      - DEF-03: backup 테스트를 분기 1회로 강제 (Runbook 개정 완료)
+
+      ## 결과
+      Qualified Opinion — 위 3건 외 적정. 2026 차기 감사에서 Unqualified Opinion 달성 목표.
+    expected_readers: [security_officer, auditor]
