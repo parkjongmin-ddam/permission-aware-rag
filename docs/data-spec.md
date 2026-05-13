@@ -657,10 +657,172 @@ in one token.
 
 ## 6. Sample Documents
 
-*This section catalogs 30–50 representative documents covering all category × sub-type
-combinations defined in Section 3, with concrete permission metadata illustrating the
-patterns in Section 4. The catalog is generated in a separate work block and tracked
-in the M1 milestone — see project README.*
+## 6. Sample Documents
+
+This section catalogs 45 fictional documents covering all 24 category × sub-type combinations
+defined in Section 3. The catalog serves three purposes:
+
+1. **Concrete grounding** for the abstract patterns in Sections 2–4
+2. **Test fixture source** — these documents will be converted to `data/documents.yaml` (or
+   equivalent) during M2 implementation
+3. **Verification reference** — each document's `expected_readers` field allows automated
+   testing of the permission matrix against the corpus
+
+### 6.1 Document Schema
+
+Each entry uses the following fields:
+
+| Field | Required | Description |
+|---|---|---|
+| `id` | yes | Unique identifier (e.g., `DOC-001`) |
+| `title` | yes | Human-readable document name |
+| `category` | yes | One of: hr, security, tech, finance, marketing, legal |
+| `sub_type` | yes | Dotted sub-type (e.g., `hr.policy`) |
+| `sensitivity` | yes | Low / Medium / High / Critical |
+| `subject` | conditional | User ID for self-access documents (hr.personnel, finance.expense) |
+| `project_id` | conditional | Project identifier for `tech.project` |
+| `project_members` | conditional | List of user IDs with project access |
+| `parties` | conditional | List of user IDs for case-based access (legal.*) |
+| `case_id` | conditional | Case identifier for legal documents |
+| `stakeholders` | conditional | List of user IDs for security.incident named-access |
+| `severity` | conditional | For security.incident (low / medium / high / critical) |
+| `executive_briefed` | conditional | Boolean, for security.incident escalation |
+| `disclosure_level` | conditional | For legal.litigation (`executive_briefing` etc.) |
+| `tags` | optional | Secondary tags for cross-functional access (e.g., `security`) |
+| `expected_readers` | yes | Persona IDs expected to read this (test verification) |
+
+User IDs referenced in the catalog match those defined in Section 2:
+`user_emp_001/002/003`, `user_tl_001`, `user_exec_001`, `user_sec_001`,
+`user_ext_001`, `user_aud_001`, `user_hrs_001`.
+
+### 6.2 Catalog by Category
+
+#### 6.2.1 `hr` — Human Resources (8 documents)
+
+| ID | Title | Sub-type | Sensitivity | Special Attributes | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-001 | Employee Handbook 2026 | `hr.policy` | Low | — | All authenticated employees+ |
+| DOC-002 | Leave Policy v3.2 | `hr.policy` | Low | — | All authenticated employees+ |
+| DOC-003 | Remote Work Guidelines | `hr.policy` | Low | — | All authenticated employees+ |
+| DOC-004 | 2026 Salary Band Reference | `hr.compensation` | High | — | executive, hr_specialist, auditor |
+| DOC-005 | Bonus Structure FY2026 | `hr.compensation` | High | — | executive, hr_specialist, auditor |
+| DOC-006 | Performance Review: user_emp_001 (2025) | `hr.personnel` | Critical | `subject: user_emp_001` | user_emp_001 (self), hr_specialist, auditor |
+| DOC-007 | Performance Review: user_tl_001 (2025) | `hr.personnel` | Critical | `subject: user_tl_001` | user_tl_001 (self), hr_specialist, auditor |
+| DOC-008 | Backend Engineer Hiring Pipeline Q4 2026 | `hr.recruitment` | Medium | — | hr_specialist, hiring team_lead (`is_hiring: true`), executive |
+
+#### 6.2.2 `security` — Security & InfoSec (7 documents)
+
+| ID | Title | Sub-type | Sensitivity | Special Attributes | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-009 | Password Policy v2.1 | `security.policy` | Low | — | All authenticated employees+ |
+| DOC-010 | Information Security Code of Conduct | `security.policy` | Low | — | All authenticated employees+ |
+| DOC-011 | INC-2026-08-001: Suspicious Login Attempt | `security.incident` | Critical | `severity: high`, `stakeholders: [user_exec_001]` | security_officer, user_exec_001 (stakeholder) |
+| DOC-012 | INC-2026-09-003: Data Exfiltration Attempt | `security.incident` | Critical | `severity: critical`, `executive_briefed: true`, `stakeholders: [user_exec_001]` | security_officer, user_exec_001, auditor |
+| DOC-013 | INC-2026-09-005: Insider Threat Investigation | `security.incident` | Critical | `severity: high`, `stakeholders: [user_sec_001]` | security_officer only (no executive briefing) |
+| DOC-014 | Q3 2026 Threat Landscape Brief | `security.threat_intel` | High | — | security_officer only |
+| DOC-015 | SOC2 Type II Audit Report 2025 | `security.compliance` | High | `tags: [audit]` | security_officer, auditor |
+
+#### 6.2.3 `tech` — Technology & Engineering (10 documents)
+
+| ID | Title | Sub-type | Sensitivity | Special Attributes | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-016 | BWCorp Infrastructure Architecture v3 | `tech.architecture` | Medium | — | Tech department employees+, executive (Tech division) |
+| DOC-017 | Microservices Communication Patterns | `tech.architecture` | Medium | — | Tech department employees+ |
+| DOC-018 | Payment API v2 Specification | `tech.api` | Low | — | All authenticated employees+ |
+| DOC-019 | SSO Authentication API Guide | `tech.api` | Low | — | All authenticated employees+ |
+| DOC-020 | Production Incident Response Playbook | `tech.runbook` | Medium | — | Tech department employees+ |
+| DOC-021 | Database Migration Procedures | `tech.runbook` | Medium | — | Tech department employees+ |
+| DOC-022 | Project Alpha: Architecture Design | `tech.project` | Medium | `project_id: project_alpha`, `project_members: [user_tl_001, user_emp_001, user_ext_001]` | Listed project members |
+| DOC-023 | Project Beta: API Integration Guide | `tech.project` | Low | `project_id: project_beta`, `project_members: [user_emp_002, user_ext_001]` | Listed project members |
+| DOC-024 | Project Gamma: Initial PRD | `tech.project` | High | `project_id: project_gamma`, `project_members: [user_exec_001, user_tl_001]` | Listed project members |
+| DOC-025 | Project Delta: Sprint Planning | `tech.project` | Low | `project_id: project_delta`, `project_members: [user_emp_001, user_emp_003]` | Listed project members |
+
+#### 6.2.4 `finance` — Finance & Accounting (8 documents)
+
+All `finance.*` documents trigger heightened audit logging on access.
+
+| ID | Title | Sub-type | Sensitivity | Special Attributes | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-026 | 2026 Annual Budget Plan | `finance.budget` | High | — | executive, auditor, finance department |
+| DOC-027 | Q4 2026 Departmental Budget Allocation | `finance.budget` | High | — | executive, auditor, finance department |
+| DOC-028 | 2025 Annual Financial Report (Audited) | `finance.statement` | Critical | — | executive, auditor, finance department |
+| DOC-029 | Q3 2026 P&L Statement | `finance.statement` | Critical | — | executive, auditor, finance department |
+| DOC-030 | Expense Report: user_emp_001 (2026-09) | `finance.expense` | Medium | `subject: user_emp_001` | user_emp_001 (self), finance department, auditor |
+| DOC-031 | Expense Report: user_emp_002 (2026-09) | `finance.expense` | Medium | `subject: user_emp_002` | user_emp_002 (self), finance department, auditor |
+| DOC-032 | Expense Report: user_tl_001 (2026-09) | `finance.expense` | Medium | `subject: user_tl_001` | user_tl_001 (self), finance department, auditor |
+| DOC-033 | 2025 Corporate Tax Filing | `finance.tax` | Critical | — | auditor, finance department only |
+
+#### 6.2.5 `marketing` — Marketing & Brand (6 documents)
+
+| ID | Title | Sub-type | Sensitivity | Special Attributes | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-034 | Fall 2026 Campaign Plan | `marketing.campaign` | Low | — | All authenticated employees+ |
+| DOC-035 | New SaaS Product Launch Campaign | `marketing.campaign` | Low | — | All authenticated employees+ |
+| DOC-036 | BWCorp Brand Guidelines 2026 | `marketing.brand` | Low | — | All authenticated employees+ including contractors |
+| DOC-037 | Logo Usage Manual | `marketing.brand` | Low | — | All authenticated employees+ including contractors |
+| DOC-038 | 2026 IT Solutions Market Analysis | `marketing.research` | Medium | — | Marketing department, executive |
+| DOC-039 | Competitive Landscape Q3 2026 | `marketing.research` | Medium | — | Marketing department, executive |
+
+#### 6.2.6 `legal` — Legal & Compliance (6 documents)
+
+| ID | Title | Sub-type | Sensitivity | Special Attributes | Expected Readers |
+|---|---|---|---|---|---|
+| DOC-040 | ExternalCo Consulting Service Agreement | `legal.contract` | High | `parties: [user_exec_001, user_ext_001]` | Legal department, listed parties |
+| DOC-041 | Cloud Vendor MSA 2026 | `legal.contract` | High | `parties: [user_exec_001, user_tl_001]` | Legal department, listed parties |
+| DOC-042 | PIPA Compliance Report 2026 | `legal.regulatory` | High | — | Legal department, executive, auditor |
+| DOC-043 | GDPR Applicability Legal Opinion | `legal.opinion` | Critical | `parties: [user_exec_001]`, `case_id: ADV-2026-014` | Legal department, listed parties |
+| DOC-044 | ExternalCo Dispute Case 2026-001 | `legal.litigation` | Critical | `case_id: CASE-2026-001`, `parties: [user_exec_001]`, `disclosure_level: executive_briefing` | Legal department, listed parties, executive (briefing) |
+| DOC-045 | IP Infringement Defense Case 2025-007 | `legal.litigation` | Critical | `case_id: CASE-2025-007`, `parties: [user_tl_001]` | Legal department, user_tl_001 only |
+
+### 6.3 Pattern Verification Map
+
+This table cross-references which specific documents test each permission pattern from
+Section 4. During M2 implementation, each row becomes one or more automated test cases.
+
+| Permission Pattern | Test Documents | Expected Behavior |
+|---|---|---|
+| **Default-deny on no metadata** | (Synthetic — to be added) | All users denied; document not in results |
+| **Self-access carve-out (hr.personnel)** | DOC-006, DOC-007 | Only subject user can read; even hr_specialist gets all, but employees only see their own |
+| **Self-access carve-out (finance.expense)** | DOC-030, DOC-031, DOC-032 | Subject user can read; finance department and auditor can read all; others denied |
+| **Cross-functional ReBAC (security.incident)** | DOC-011, DOC-012, DOC-013 | security_officer always; named stakeholders; executive only with `executive_briefed: true` (DOC-012) |
+| **Threat intel restriction** | DOC-014 | security_officer only; even auditor denied |
+| **Project scoping** | DOC-022, DOC-023, DOC-024, DOC-025 | Only listed `project_members`; contractor (user_ext_001) sees DOC-022 + DOC-023 but not DOC-024 + DOC-025 |
+| **Heightened audit logging (finance)** | DOC-026 through DOC-033 | Every access logged with audit metadata regardless of role |
+| **Case-based parties (legal.contract)** | DOC-040, DOC-041 | Only listed parties + legal department |
+| **Case-based parties (legal.litigation)** | DOC-044, DOC-045 | Only listed parties + legal department; DOC-044 also visible to executive (disclosure_level) |
+| **Broad baseline (marketing.brand)** | DOC-036, DOC-037 | All authenticated users including contractor |
+| **Compensation restriction** | DOC-004, DOC-005 | Blocked for employee/team_lead/contractor even though they may have other hr.* access |
+| **Contractor temporal expiry** | (Tested at session level — Rule 4) | All access denied when `NOW() > user.end_date` |
+| **Audit logging wrap (auditor)** | All documents accessed by user_aud_001 | Audit log entry generated alongside grant |
+
+### 6.4 Coverage Verification
+
+| Category × Sub-type | Document Count | Coverage |
+|---|---|---|
+| `hr.policy` | 3 | ✅ |
+| `hr.compensation` | 2 | ✅ |
+| `hr.personnel` | 2 | ✅ |
+| `hr.recruitment` | 1 | ✅ |
+| `security.policy` | 2 | ✅ |
+| `security.incident` | 3 | ✅ |
+| `security.threat_intel` | 1 | ✅ |
+| `security.compliance` | 1 | ✅ |
+| `tech.architecture` | 2 | ✅ |
+| `tech.api` | 2 | ✅ |
+| `tech.runbook` | 2 | ✅ |
+| `tech.project` | 4 | ✅ |
+| `finance.budget` | 2 | ✅ |
+| `finance.statement` | 2 | ✅ |
+| `finance.expense` | 3 | ✅ |
+| `finance.tax` | 1 | ✅ |
+| `marketing.campaign` | 2 | ✅ |
+| `marketing.brand` | 2 | ✅ |
+| `marketing.research` | 2 | ✅ |
+| `legal.contract` | 2 | ✅ |
+| `legal.regulatory` | 1 | ✅ |
+| `legal.opinion` | 1 | ✅ |
+| `legal.litigation` | 2 | ✅ |
+| **Total** | **45** | **24/24 sub-types covered** |
 
 ## 7. Future Extensions
 
