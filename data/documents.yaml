@@ -1311,3 +1311,556 @@ documents:
 
       본 문서는 audit 위탁 절차 외 누구에게도 공유 금지.
     expected_readers: [auditor]
+
+# ─────────────────────────────────────────────────────────────────
+  # Category: marketing (6 documents)
+  # marketing.brand is the broadest baseline (includes contractor).
+  # marketing.research is restricted to marketing personnel + executive.
+  # ─────────────────────────────────────────────────────────────────
+
+  - id: DOC-034
+    title: "Fall 2026 Campaign Plan"
+    category: marketing
+    sub_type: marketing.campaign
+    sensitivity: Low
+    language: mixed
+    body: |
+      # Fall 2026 Campaign Plan
+
+      Campaign Name: "Smart Workspace, Smart Choice"
+      Period: 2026-10-15 ~ 2026-12-15 (8주)
+      Budget: KRW 12억 (Q4 marketing 예산 내)
+      Lead: Marketing Director (Marketing Division)
+
+      ## 캠페인 목표
+      - B2B 신규 리드 1,200건 확보 (전년 가을 캠페인 850건 대비 +41%)
+      - Demo 신청 350건
+      - 신규 trial 가입 180건
+      - 브랜드 인지도 +15%p (Brand Tracking Survey 기준)
+
+      ## 핵심 메시지
+      "BWCorp Smart Workspace로 업무 효율을 35% 끌어올리세요."
+      - 타겟: IT 부서장, CTO, 중소·중견기업 의사결정권자
+      - 차별점: 한국 시장 최적화 + 글로벌 표준 보안 (SOC2)
+
+      ## 채널 믹스
+      - 디지털 광고 (Google, Naver, LinkedIn): 7억
+      - 컨퍼런스 후원 (4건): 2.5억
+      - 콘텐츠 마케팅 (블로그, 백서 5종): 1.5억
+      - 인플루언서 협업 (IT 분야 5명): 1억
+
+      ## 측정 지표
+      주 단위 dashboard. Lead-to-trial conversion 5% 이상 목표 (전년 3.2%).
+
+      상세 자료 marketing.bwcorp.local/fall2026 참조.
+    expected_readers: [employee, team_lead, executive, security_officer, auditor, hr_specialist]
+
+  - id: DOC-035
+    title: "New SaaS Product Launch Campaign"
+    category: marketing
+    sub_type: marketing.campaign
+    sensitivity: Low
+    language: mixed
+    body: |
+      # New SaaS Product Launch Campaign: BWCorp Identity Cloud
+
+      Launch Date: 2026-11-20
+      Campaign Period: 2026-11-01 ~ 2027-01-31 (3개월)
+      Product: BWCorp Identity Cloud (SSO·IAM SaaS)
+      Budget: KRW 18억
+
+      ## Strategic Context
+      Project Gamma 사전 마케팅 일환으로, 신규 IAM SaaS 제품의 시장 진입을 알리는
+      캠페인. 초기 타겟: 한국 중견기업 + 동남아 확장 준비.
+
+      ## 캠페인 단계
+      ### Phase 1: Awareness (11월 1~14일)
+      - Teaser 영상 SNS 노출
+      - 업계 매체 인터뷰 3건 게재 (보안뉴스, ZDNet Korea, IT World)
+
+      ### Phase 2: Launch (11월 20일)
+      - 출시 행사 (코엑스 그랜드볼룸, 300석)
+      - Press release 동시 배포 (국문·영문)
+      - 임원진 키노트 (user_exec_001 발표)
+
+      ### Phase 3: Conversion (11월 21일 ~ 2027-01-31)
+      - 무료 trial 90일 제공 (정상가 대비 70% 할인 첫해)
+      - 파트너사 공동 마케팅 (3개 컨설팅 파트너)
+      - 사용자 사례 6건 게재
+
+      ## KPI
+      - 출시 후 90일 내 paying customer 50개사
+      - Trial 가입 1,500건
+      - 미디어 노출 50건 이상
+
+      상세 launch playbook은 marketing.bwcorp.local/identity-launch 참조.
+    expected_readers: [employee, team_lead, executive, security_officer, auditor, hr_specialist]
+
+  - id: DOC-036
+    title: "BWCorp Brand Guidelines 2026"
+    category: marketing
+    sub_type: marketing.brand
+    sensitivity: Low
+    language: mixed
+    body: |
+      # BWCorp Brand Guidelines 2026
+
+      Version: 3.0
+      Effective: 2026-01-01
+      Audience: 사내 임직원, 외주사, 파트너 (외부 사용 시 사전 승인 필요)
+
+      ## 브랜드 핵심 가치
+      BWCorp 브랜드는 다음 가치를 시각·언어로 표현합니다.
+      - 신뢰성 (Reliability): 안정적인 색감, 명확한 타이포그래피
+      - 전문성 (Expertise): 정제된 레이아웃, 데이터 중심 시각화
+      - 혁신성 (Innovation): 액센트 컬러의 절제된 사용
+
+      ## 색상 시스템
+      ### Primary
+      - BW Blue: #0B5FFF (Pantone 2935 C)
+      - BW Dark: #1A1A2E
+
+      ### Secondary
+      - Accent Coral: #FF6B6B
+      - Neutral Gray: #4A4A4A
+      - Background: #FFFFFF / #F8F9FA
+
+      ## 타이포그래피
+      - 국문: Pretendard (모든 매체)
+      - 영문: Inter
+      - 코드·기술 자료: JetBrains Mono
+
+      ## 톤 & 보이스
+      - 명확하고 간결하게 (불필요한 미사여구 지양)
+      - 데이터 기반 표현 권장 ("X% 개선" 등)
+      - 마케팅 카피는 자신감 있되 과장 금지
+
+      ## 사용 금지
+      - 로고 색상 변경, 회전, 비율 왜곡
+      - 회사 비공식 슬로건 사용
+      - 경쟁사 직접 언급
+
+      문의: brand@bwcorp.local
+    expected_readers: [employee, team_lead, executive, security_officer, contractor, auditor, hr_specialist]
+
+  - id: DOC-037
+    title: "Logo Usage Manual"
+    category: marketing
+    sub_type: marketing.brand
+    sensitivity: Low
+    language: mixed
+    body: |
+      # BWCorp Logo Usage Manual
+
+      Version: 2.1
+      Effective: 2026-03-01
+
+      ## 로고 종류
+      - Primary: 풀 로고 (심볼 + 워드마크)
+      - Secondary: 심볼 단독 (가로 24px 미만 사용 환경)
+      - Monochrome: 단색 버전 (인쇄·팩스 환경)
+
+      ## 최소 사이즈
+      - Primary 로고: 가로 80px 이상 (디지털), 25mm 이상 (인쇄)
+      - Secondary 심볼: 가로 24px 이상
+
+      ## Clear Space
+      로고 주변에 최소 여백을 확보합니다.
+      - 사방으로 워드마크 "B" 글자 높이만큼 여백 유지
+
+      ## 배경 사용
+      - 흰색·밝은 배경: Primary 로고 (Full Color)
+      - 어두운 배경: White-out 로고
+      - 사진 위 사용: 가독성 확보 위해 반투명 overlay 추천
+
+      ## 금지 사용 예
+      - 로고 색 변경 (브랜드 컬러 외)
+      - 로고 기울이기·회전
+      - 로고에 그림자·테두리 효과 추가
+      - 다른 그래픽과 합성 (단, 공식 co-branding 케이스 제외)
+
+      ## 다운로드
+      공식 로고 파일은 brand.bwcorp.local/assets에서 다운로드 (사내 SSO 인증).
+      외주사는 brand@bwcorp.local에 요청.
+    expected_readers: [employee, team_lead, executive, security_officer, contractor, auditor, hr_specialist]
+
+  - id: DOC-038
+    title: "2026 IT Solutions Market Analysis"
+    category: marketing
+    sub_type: marketing.research
+    sensitivity: Medium
+    language: mixed
+    body: |
+      # 2026 IT Solutions Market Analysis
+
+      Report Date: 2026-09-30
+      Author: Marketing Research Team
+      Internal Use Only — Marketing Division, Executive
+
+      ## 시장 개요
+      한국 B2B IT 솔루션 시장 규모: KRW 8.2조 (2026), 전년 대비 +9% 성장.
+      세그먼트별 성장률:
+      - IAM/Identity:           +18% (보안 강화 트렌드)
+      - DevOps Tools:           +14%
+      - Data Platform:          +12%
+      - Workspace/Collaboration: +6% (포화 단계 진입)
+
+      ## 주요 트렌드
+      1. AI Native 솔루션 부상: 기존 솔루션에 AI 기능 attach 형태에서 AI 자체가 핵심
+         가치인 제품으로 전환. 2026 신규 시장 진입 솔루션의 약 40%가 AI native.
+      2. 보안·컴플라이언스 우선순위 상승: 개인정보보호법 개정 (2026 시행)과 글로벌
+         진출 기업의 SOC2 요구 증가.
+      3. Vertical SaaS 가속: Generic 솔루션에서 산업 특화 (금융, 헬스케어, 제조) 제품 강세.
+
+      ## 한국 시장 특성
+      - 의사결정 사이클: 평균 4.2개월 (글로벌 평균 6.1개월 대비 짧음)
+      - POC 의무 비율: 78% (대기업 도입 시)
+      - 가격 민감도: SMB 시장에서 매우 높음
+
+      ## BWCorp 시사점
+      - Identity Cloud 출시 시점에 IAM 시장 +18% 성장 기조와 부합
+      - Project Gamma의 멀티 테넌시 아키텍처 → Vertical SaaS 전략 enabler
+
+      상세 데이터·차트는 별도 첨부 (총 38pages).
+    expected_readers: [user_emp_002, executive]
+
+  - id: DOC-039
+    title: "Competitive Landscape Q3 2026"
+    category: marketing
+    sub_type: marketing.research
+    sensitivity: Medium
+    language: mixed
+    body: |
+      # Competitive Landscape Q3 2026
+
+      Period: 2026-07-01 ~ 2026-09-30
+      Internal Use Only — Marketing Division, Executive
+      Updated: 2026-10-10
+
+      ## Direct Competitors
+
+      ### CompetitorA (국내 1위)
+      - 시장 점유율: 22% (전년 동기 24%, -2%p)
+      - Q3 신규 출시: AI 워크플로우 자동화 모듈
+      - 가격 정책: enterprise 한정 30% 할인 캠페인 (BWCorp 견제 의도 의심)
+      - 약점: 글로벌 확장 부진, 클라우드 네이티브 전환 지연
+
+      ### CompetitorB (글로벌, 한국 진출 3년차)
+      - 시장 점유율: 11% (안정적 성장)
+      - Q3 신규 출시: 없음 (전반적 인력 감축)
+      - 가격 정책: 환율 영향으로 +8% 인상 (BWCorp에 유리)
+
+      ### CompetitorC (스타트업, 빠른 성장)
+      - 시장 점유율: 4% (Q2 대비 +1%p)
+      - Q3 신규 출시: developer-centric IAM SDK
+      - 강점: 가격, MAU 기준 빠른 성장
+      - 위협: BWCorp Identity Cloud와 직접 경쟁 예상
+
+      ## BWCorp 포지션
+      - 시장 점유율: 14% (전년 동기 12%, +2%p)
+      - 차별점: SOC2 + 한국형 보안 인증, 한국어 지원, mid-market 적합
+
+      ## 권고
+      - CompetitorC 견제: Project Gamma (Identity Cloud) launch 시점에 mid-market 가격 정책 검토
+      - CompetitorA 약점 활용: 글로벌 SOC2 인증 마케팅 강화
+
+      분기 update. 다음 갱신: 2026-Q4 결산 직후.
+    expected_readers: [user_emp_002, executive]
+
+  # ─────────────────────────────────────────────────────────────────
+  # Category: legal (6 documents)
+  # Most legal documents use parties-based ABAC (Rule 3).
+  # legal.litigation may use disclosure_level to expand executive visibility.
+  # ─────────────────────────────────────────────────────────────────
+
+  - id: DOC-040
+    title: "ExternalCo Consulting Service Agreement"
+    category: legal
+    sub_type: legal.contract
+    sensitivity: High
+    language: mixed
+    parties: [user_exec_001, user_ext_001]
+    body: |
+      # Consulting Service Agreement (CSA-2026-EXT-007)
+
+      Effective Date: 2026-06-01
+      Expiry Date: 2026-09-30 (자동 연장 없음)
+      Contract Type: Time and Material (T&M)
+      Total Cap: KRW 1.8억 (월 60M × 3개월)
+
+      ## 당사자
+      - 발주처 (Client): BWCorp Inc.
+        - 서명자: user_exec_001 (Tech Division VP)
+      - 수행자 (Consultant): ExternalCo Ltd.
+        - 서명자: ExternalCo Managing Partner
+        - 주요 인력: user_ext_001 (Senior Architect), 외 1명
+
+      ## 업무 범위 (SoW)
+      1. Project Alpha 도메인 모델링 자문 (월 80시간)
+      2. 마이크로서비스 분해 전략 검토 및 ADR 작성
+      3. BWCorp Engineering Team 대상 워크숍 3회 (각 4시간)
+
+      ## 산출물
+      - Domain Model Document (Phase 1)
+      - Architecture Decision Records (Phase 2, 5건 이상)
+      - 워크숍 자료 및 녹화본
+
+      ## Confidentiality
+      - 본 계약상 알게 된 BWCorp의 영업비밀, 기술정보, 고객정보 일체에 대해 계약
+        종료 후 5년간 비밀유지 의무 부담.
+      - 위반 시 손해배상 외 형사 고발 가능.
+
+      ## Termination
+      - 30일 사전 통지로 계약 해지 가능 (양측)
+      - 중대 위반 시 즉시 해지
+
+      ## 준거법 및 분쟁
+      - 준거법: 대한민국법
+      - 관할: 서울중앙지방법원
+
+      본 문서는 양 당사자 외 공유 금지. 사본 보관: Legal 부서.
+    expected_readers: [user_exec_001, user_ext_001]
+
+  - id: DOC-041
+    title: "Cloud Vendor MSA 2026"
+    category: legal
+    sub_type: legal.contract
+    sensitivity: High
+    language: mixed
+    parties: [user_exec_001, user_tl_001]
+    body: |
+      # Master Service Agreement (MSA-2026-CLOUD-001)
+
+      Effective Date: 2026-01-01
+      Initial Term: 36 months (2028-12-31까지)
+      Renewal: 자동 1년 갱신 (양측 90일 사전 통지로 해지)
+      Annual Spend Commitment: USD 850K (~KRW 11.5억)
+
+      ## 당사자
+      - Customer: BWCorp Inc.
+        - 서명자: user_exec_001 (Tech Division VP)
+        - 기술 책임자: user_tl_001 (Backend Team Lead)
+      - Vendor: CloudVendorA (이하 "Vendor")
+
+      ## 서비스 범위
+      - 컴퓨팅 (EC2, ECS Fargate, EKS) — Seoul + Tokyo 리전
+      - 스토리지 (S3, EBS, EFS)
+      - 데이터베이스 (RDS Aurora, ElastiCache)
+      - 보안·관리 (IAM, KMS, GuardDuty, CloudTrail)
+
+      ## SLA
+      - Availability: 99.95% monthly (서비스별 별도 SLA 부록 참조)
+      - Support: 24/7 Enterprise tier
+      - Response Time: Sev1 15분, Sev2 1시간
+
+      ## Pricing
+      - 사전 약정 할인: 25% (Reserved Instance 기반)
+      - 데이터 전송 한도 초과 시 초과분 별도 청구
+      - 환율 변동: USD 결제 기준, 변동 ±5%까지 동일 환율
+
+      ## Data Protection
+      - 데이터 잔존(Data Residency): Seoul + Tokyo 리전에 한함
+      - 암호화: 저장 시 AES-256, 전송 시 TLS 1.2 이상
+      - 백업 보유: 35일 (Vendor 측), BWCorp 추가 백업 자체 운영
+
+      ## 분쟁 해결
+      - 1차: 양측 협의 (45일)
+      - 2차: KCAB 중재 (대한상사중재원)
+
+      본 문서는 양 당사자 외 공유 금지. Vendor security questionnaire는 별도 첨부.
+    expected_readers: [user_exec_001, user_tl_001]
+
+  - id: DOC-042
+    title: "PIPA Compliance Report 2026"
+    category: legal
+    sub_type: legal.regulatory
+    sensitivity: High
+    language: mixed
+    body: |
+      # 개인정보보호법(PIPA) 컴플라이언스 보고서 2026
+
+      Reporting Period: 2025-10-01 ~ 2026-09-30
+      Compliance Lead: Legal Division
+      External Counsel: ExternalLawFirm Korea
+      Audit Reference: AUDIT-2026-PIPA-001
+
+      ## 개요
+      2026 개인정보보호법 개정안 시행(2026-03-15)에 따른 BWCorp의 적용 상태 및
+      후속 조치 요약. 본 보고서는 이사회 및 감사위원회에 분기별 제출 자료의 H2 통합본임.
+
+      ## 적용 범위
+      - 개인정보 처리: 임직원 530명, 고객 사용자 약 28만명
+      - 적용 시스템: HR 시스템, 고객 SaaS 플랫폼, Marketing CRM, Customer Support
+
+      ## 주요 컴플라이언스 항목
+
+      ### 1. 처리방침 개정
+      - 2026-04-01부 신규 처리방침 시행 완료
+      - 사용자 동의 재취득: 99.2% 완료 (잔여 0.8%는 계정 비활성)
+
+      ### 2. 가명·익명처리
+      - 마케팅 분석 목적 데이터는 익명화 처리 (식별 위험도 평가 완료)
+      - 가명정보 결합 시 사전 영향평가 의무화 (Q3에 1건 수행)
+
+      ### 3. 개인정보 영향평가(PIA)
+      - Q2: 신규 ML 추천 시스템 도입 시 PIA 수행 (양호)
+      - Q3: 외부 marketing tool 도입 검토 시 PIA 수행 (조건부 승인)
+
+      ## 미해결 사안
+      - 동남아 법인(베트남) 데이터 이전: 표준계약조항(SCC) 체결 진행 중
+      - Legacy DB 보유 기간 초과 데이터 삭제: 2026-Q4 완료 예정
+
+      ## 감사 의견
+      중대한 위반 사항 없음. 위 미해결 사안의 Q4 완료 모니터링 필요.
+
+      본 문서는 임원, audit, legal 부서 외 공유 금지.
+    expected_readers: [executive, auditor]
+
+  - id: DOC-043
+    title: "GDPR Applicability Legal Opinion"
+    category: legal
+    sub_type: legal.opinion
+    sensitivity: Critical
+    language: mixed
+    case_id: ADV-2026-014
+    parties: [user_exec_001]
+    body: |
+      # GDPR 적용 범위 법무 의견서 (ADV-2026-014)
+
+      Date: 2026-08-22
+      Prepared By: ExternalLawFirm Korea (GDPR Specialist Team)
+      Reviewer: BWCorp Legal Counsel
+      Addressee: user_exec_001 (Tech Division VP)
+      Case ID: ADV-2026-014
+
+      ## 의뢰 사항
+      Project Gamma(2027 출시 예정 글로벌 IAM SaaS)의 GDPR(EU 일반개인정보보호규정)
+      적용 범위 및 BWCorp가 부담해야 할 의무 사항.
+
+      ## 결론 요약
+      BWCorp는 GDPR 제3조 제2항 (a)호에 따라 GDPR의 영토적 적용 대상에 해당합니다.
+      EU 거주자에게 직접 서비스를 제공할 경우 EU 내 사업장 부재와 무관하게 적용됨.
+
+      ## 핵심 의무
+      1. 데이터 컨트롤러/프로세서 지위 명확화: B2B 모델에서 고객사가 컨트롤러, BWCorp는
+         프로세서일 가능성. DPA(Data Processing Agreement) 체결 필수.
+
+      2. EU 대리인 지정: GDPR Art. 27. 한 회원국에 대리인 사전 지정 필요.
+         - 권고: 아일랜드 또는 네덜란드 (영어 친화도, GDPR 감독기관 친화성 고려)
+
+      3. 국제 이전 메커니즘:
+         - 한국은 적정성 결정(Adequacy Decision) 수령국 (2021-12-17부)
+         - 다만 일부 한국 법령(통신비밀보호법 등) 관련 추가 보장 조치 필요
+         - 표준계약조항(SCC) 보조 사용 권장
+
+      4. 위반 시 제재:
+         - 행정처분: 전 세계 매출 4% 또는 €20M 중 큰 금액
+
+      ## 권고 사항
+      Project Gamma 정식 출시(2027-Q2) 전까지 다음 완료:
+      - DPA template 작성 및 Legal review (Q4 2026)
+      - EU 대리인 선임 (Q1 2027)
+      - DPO(Data Protection Officer) 지정 검토 — 의무는 아니나 evidence of governance
+
+      본 의견서는 의뢰인-변호사 비밀유지특권(Attorney-client privilege) 대상.
+      사전 동의 없는 외부 공유 금지.
+    expected_readers: [user_exec_001]
+
+  - id: DOC-044
+    title: "ExternalCo Dispute Case 2026-001"
+    category: legal
+    sub_type: legal.litigation
+    sensitivity: Critical
+    language: mixed
+    case_id: CASE-2026-001
+    parties: [user_exec_001]
+    disclosure_level: executive_briefing
+    body: |
+      # Litigation Case: ExternalCo Dispute (CASE-2026-001)
+
+      Case Type: Commercial Dispute (계약 이행)
+      Filed Date: 2026-09-18
+      Status: Pre-litigation (조정 단계)
+      Disclosure Level: Executive Briefing 허용
+      BWCorp Internal Lead: user_exec_001 (Tech Division VP)
+      External Counsel: ExternalLawFirm Korea
+
+      ## 사안 요약
+      ExternalCo가 Consulting Service Agreement (CSA-2026-EXT-007) 종료 후 미지급
+      컨설팅비 KRW 1.2억의 지급을 청구한 사안. BWCorp 측은 산출물 일부 미완료 및
+      품질 미달을 근거로 일부 지급 거절.
+
+      ## Timeline
+      - 2026-09-30: CSA-2026-EXT-007 계약 종료
+      - 2026-10-12: ExternalCo 측 지급 청구 공문 발송
+      - 2026-10-25: BWCorp 측 지급 거절 사유서 송부 (산출물 미달 근거)
+      - 2026-11-02: ExternalCo 측 대한상사중재원(KCAB) 중재 신청 예고
+      - 2026-11-15: 양측 사전 조정 (Mediation) 합의
+
+      ## BWCorp 입장
+      - 합의된 산출물(ADR 5건) 중 3건만 제출, 품질 미달
+      - 워크숍 3회 중 1회만 실시
+      - 따라서 계약상 지급 의무는 0.7억 한도
+
+      ## 위험 평가
+      - 중재 진행 시 예상 비용: KRW 0.3억 (변호사 비용 + 중재 수수료)
+      - 최악의 시나리오: 전액 지급 + 지연이자 (총 1.35억 추정)
+      - 합의 가능 영역: 0.9~1.0억 사이
+
+      ## Next Steps
+      - 2026-11-15 조정 결과에 따라 합의 또는 정식 중재 진행 결정
+      - 합의 시 user_exec_001 + Legal Director 공동 결재
+
+      본 문서는 disclosure_level: executive_briefing에 따라 임원진 brief 가능.
+      변호사 비밀유지특권 대상.
+    expected_readers: [user_exec_001]
+
+  - id: DOC-045
+    title: "IP Infringement Defense Case 2025-007"
+    category: legal
+    sub_type: legal.litigation
+    sensitivity: Critical
+    language: mixed
+    case_id: CASE-2025-007
+    parties: [user_tl_001]
+    body: |
+      # Litigation Case: IP Infringement Defense (CASE-2025-007)
+
+      Case Type: Patent Infringement Defense
+      Filed Date: 2025-11-04 (소장 송달일)
+      Status: Active Litigation (1심 진행 중)
+      Disclosure Level: Restricted — 명시된 당사자만
+      BWCorp Internal Lead: user_tl_001 (Technical Lead Witness)
+      External Counsel: ExternalIPFirm
+
+      ## 사안 요약
+      Plaintiff Corp(미국 기반)가 BWCorp의 Payment API v2 일부 기능이 자사 등록 특허
+      KR-10-2018-0123XXX (분산 결제 라우팅 알고리즘)를 침해한다고 주장한 사안.
+      BWCorp는 독자 개발 및 선행기술 항변으로 대응.
+
+      ## 사건 진행
+      - 2025-11-04: 서울중앙지법 소장 송달
+      - 2025-12-15: BWCorp 측 답변서 제출 (특허 무효·비침해 항변)
+      - 2026-02-20: 1차 변론기일
+      - 2026-05-14: 기술설명회 (user_tl_001 기술 설명)
+      - 2026-08-08: 2차 변론기일
+      - 2026-10-30: 변론 종결, 2026-12-18 1심 판결 예정
+
+      ## BWCorp 방어 전략
+      1. 비침해 항변: Payment API v2의 라우팅 로직은 청구항 제1항의 핵심 구성요소
+         (동적 가중치 산정)와 다른 알고리즘 (정적 우선순위 기반) 사용.
+      2. 특허 무효 항변: 특허청에 별도로 무효심판 청구 (2026-03-10 청구, 심결 대기 중).
+      3. 선행기술 항변: 출원일(2018-05-22) 전 공개된 학술 논문 2건 제시.
+
+      ## user_tl_001 역할
+      기술 설명회에서 Payment API v2 아키텍처 직접 설명. 향후 증인신문 예상.
+      법적 자문 및 발언 준비는 ExternalIPFirm과 사전 조율 필수.
+
+      ## 위험 평가
+      - 패소 시 손해배상 청구액: KRW 5억 (실손해 + 합리적 실시료)
+      - 침해금지 가처분 가능성 — Payment API v2 운영 영향
+      - 변호사 의견: 승소 가능성 75% (강한 비침해 항변 + 선행기술)
+
+      본 문서는 명시된 당사자(user_tl_001) 및 Legal 부서 외 공유 절대 금지. 변호사
+      비밀유지특권 대상.
+    expected_readers: [user_tl_001]
