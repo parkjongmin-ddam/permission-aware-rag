@@ -1,0 +1,301 @@
+# BWCorp Permission-aware RAG: Sample Documents Fixture
+#
+# This file is the fixture data referenced in docs/data-spec.md Section 6.
+# Contains 45 fictional documents covering all 24 category × sub-type combinations.
+#
+# Schema:
+#   id:               string (DOC-XXX)
+#   title:            string
+#   category:         hr | security | tech | finance | marketing | legal
+#   sub_type:         dotted sub-type (e.g., hr.policy)
+#   sensitivity:      Low | Medium | High | Critical
+#   language:         ko | en | mixed
+#   body:             multi-line text content (300~500 chars target)
+#   expected_readers: list of personas or user_ids for testing
+#
+#   # Conditional fields (only included when applicable):
+#   subject:           user_id (for hr.personnel, finance.expense self-access)
+#   project_id:        string (for tech.project)
+#   project_members:   [user_ids] (for tech.project)
+#   parties:           [user_ids] (for legal.* case-based)
+#   case_id:           string (for legal.*)
+#   stakeholders:      [user_ids] (for security.incident named access)
+#   severity:          low | medium | high | critical (for security.incident)
+#   executive_briefed: boolean (for security.incident)
+#   disclosure_level:  string (for legal.litigation)
+#   tags:              [strings] (cross-functional override hints)
+#
+# See docs/data-spec.md for full context.
+
+documents:
+
+  # ─────────────────────────────────────────────────────────────────
+  # Category: hr (8 documents)
+  # ─────────────────────────────────────────────────────────────────
+
+  - id: DOC-001
+    title: "Employee Handbook 2026"
+    category: hr
+    sub_type: hr.policy
+    sensitivity: Low
+    language: ko
+    body: |
+      # BWCorp 직원 핸드북 2026
+
+      BWCorp에 합류하신 것을 환영합니다. 본 핸드북은 2026년 1월 1일부터 적용되며,
+      회사의 핵심 가치, 근무 정책, 복리후생 및 행동강령을 정리한 문서입니다.
+
+      ## 핵심 가치
+      - 신뢰: 동료, 고객, 파트너와의 모든 관계에서 정직하고 투명하게 행동합니다.
+      - 전문성: 본인 분야에서 지속적으로 성장하며 최고 수준의 결과를 추구합니다.
+      - 협업: 부서 간 경계를 넘나들며 함께 문제를 해결합니다.
+
+      ## 주요 정책 개요
+      근무 시간, 휴가, 재택근무, 출장, 경비처리 등 세부 정책은 별도 문서를 참조하십시오.
+      인사 관련 문의는 HR Helpdesk(hr-help@bwcorp.local)로 연락 바랍니다.
+
+      ## 행동강령
+      모든 임직원은 회사 정보보안 정책 및 윤리강령을 준수해야 합니다. 위반 시
+      인사위원회 회부 절차가 진행됩니다.
+
+      본 문서는 매년 1월 개정되며, 변경 사항은 사내 공지 채널을 통해 안내됩니다.
+    expected_readers: [employee, team_lead, executive, security_officer, contractor, auditor, hr_specialist]
+
+  - id: DOC-002
+    title: "Leave Policy v3.2"
+    category: hr
+    sub_type: hr.policy
+    sensitivity: Low
+    language: ko
+    body: |
+      # 휴가 정책 v3.2
+
+      본 정책은 2026년 1월 1일부로 시행되며, BWCorp 정규직 임직원에게 적용됩니다.
+
+      ## 연차 휴가
+      - 입사 1년 미만: 월 1일씩 발생 (최대 11일)
+      - 입사 1년 이상: 연 15일 부여
+      - 3년차부터 2년마다 1일씩 추가 (최대 25일)
+
+      ## 신청 절차
+      1. HR 시스템에서 휴가 신청서 작성
+      2. 직속 상사 승인 (1영업일 이내)
+      3. 5일 이상 연속 휴가는 부서장 추가 승인 필요
+
+      ## 병가
+      연 5일 한도 내에서 유급 처리. 3일 이상은 진단서 제출 필요.
+
+      ## 미사용 연차
+      당해년도 미사용 연차는 익년도 2월 말일까지 사용 가능하며, 이후 자동 소멸합니다.
+
+      문의: hr-help@bwcorp.local
+    expected_readers: [employee, team_lead, executive, security_officer, contractor, auditor, hr_specialist]
+
+  - id: DOC-003
+    title: "Remote Work Guidelines"
+    category: hr
+    sub_type: hr.policy
+    sensitivity: Low
+    language: ko
+    body: |
+      # 재택근무 가이드라인 (2026)
+
+      ## 적용 대상
+      - 입사 6개월 이상 정규직
+      - 보안 등급 1~3 업무 담당자 (4 이상은 사전 승인 필요)
+
+      ## 근무 형태
+      - 주 2일까지 재택 허용
+      - 코어타임: 10:00 ~ 16:00 (Slack 응답 의무)
+      - 화상회의 참여 시 카메라 ON 권장
+
+      ## 보안 요구사항
+      - 회사 지급 노트북만 사용 (개인 기기 X)
+      - VPN 필수 연결
+      - 공공 Wi-Fi에서 사내 시스템 접속 금지
+      - 외부에서 출력·캡처 금지
+
+      ## 신청
+      HR 시스템 > 재택근무 신청. 매월 첫째 주에 다음 달 일정 등록.
+
+      위반 시 재택근무 자격 일시 정지 및 인사 기록에 반영됩니다.
+    expected_readers: [employee, team_lead, executive, security_officer, auditor, hr_specialist]
+
+  - id: DOC-004
+    title: "2026 Salary Band Reference"
+    category: hr
+    sub_type: hr.compensation
+    sensitivity: High
+    language: mixed
+    body: |
+      # 2026 Salary Band Reference (Confidential)
+
+      본 문서는 임원, hr_specialist, auditor만 열람 가능합니다.
+
+      ## Engineering Track (KRW, 연봉 기준)
+      - L1 (Entry):     45M ~ 55M
+      - L2 (Mid):       55M ~ 75M
+      - L3 (Senior):    75M ~ 100M
+      - L4 (Staff):    100M ~ 140M
+      - L5 (Principal):140M ~ 200M
+
+      ## Operations Track (HR, Finance, Marketing, Legal)
+      - O1: 40M ~ 50M
+      - O2: 50M ~ 65M
+      - O3: 65M ~ 90M
+      - O4: 90M ~ 130M
+
+      ## 결정 요인
+      - 직무 레벨 (Title, Scope, Impact)
+      - 시장 벤치마크 (연 1회 외부 조사 반영)
+      - 개인 성과 평가 결과
+
+      각 레벨 내에서 ±10% 범위에서 개별 책정. Promotion 시 즉시 신규 레벨 밴드 적용.
+
+      문의: compensation@bwcorp.local
+    expected_readers: [executive, hr_specialist, auditor]
+
+  - id: DOC-005
+    title: "Bonus Structure FY2026"
+    category: hr
+    sub_type: hr.compensation
+    sensitivity: High
+    language: ko
+    body: |
+      # 성과급(Bonus) 산정 기준 FY2026
+
+      ## 구성
+      연간 보상은 [기본급 12개월] + [성과급 (1~4개월분)]으로 구성됩니다.
+
+      ## 산정 공식
+      성과급 = 기본 월급 × 회사 성과 계수 × 개인 성과 계수
+
+      - 회사 성과 계수: 0.5 ~ 1.5 (연간 매출/이익 목표 달성률, 임원회의 결정)
+      - 개인 성과 계수: 0.0 ~ 1.5 (인사평가 등급 기준)
+        - S: 1.5
+        - A: 1.2
+        - B: 1.0
+        - C: 0.5
+        - D: 0.0 (PIP 대상)
+
+      ## 지급 시기
+      - 50%: 1월 (전년도 성과 확정 후)
+      - 50%: 7월 (Mid-year retention)
+
+      ## 특이 사항
+      - 입사 1년 미만: 비례 지급
+      - 자발적 퇴사자: 지급일 기준 재직 중인 자에 한함
+      - M&A·Strategic 보너스는 별도 정책 적용
+
+      문의: compensation@bwcorp.local
+    expected_readers: [executive, hr_specialist, auditor]
+
+  - id: DOC-006
+    title: "Performance Review: user_emp_001 (2025)"
+    category: hr
+    sub_type: hr.personnel
+    sensitivity: Critical
+    language: ko
+    subject: user_emp_001
+    body: |
+      # 2025년 인사평가: user_emp_001 (김민지)
+
+      Subject: user_emp_001 (Backend Engineer, L2)
+      Reviewer: user_tl_001 (Backend Team Lead)
+      Period: 2025-01-01 ~ 2025-12-31
+
+      ## 종합 평가: A
+
+      ## Strengths
+      - Payment API v2 마이그레이션 프로젝트에서 핵심 기술 의사결정 주도
+      - 코드 리뷰 품질 우수 (사내 평균 대비 +25% 댓글 밀도)
+      - 신규 입사자 온보딩 멘토링 적극 참여
+
+      ## Areas for Improvement
+      - 장애 대응 시 커뮤니케이션 늦어지는 경향 (incident report 작성 지연 2회)
+      - Cross-team 회의에서 의견 표명 부족
+
+      ## Promotion Readiness
+      2026년 하반기 L3 승진 후보군 진입 가능. 다만 communication 영역 개선 필요.
+
+      ## 합의 사항
+      - 2026 상반기에 cross-team 프로젝트(Project Beta) 리드 역할 부여
+      - Communication 워크샵 참여
+
+      본 평가는 양자 합의되었으며, 이의 제기 기한은 본 문서 발행일로부터 14일입니다.
+    expected_readers: [user_emp_001, hr_specialist, auditor]
+
+  - id: DOC-007
+    title: "Performance Review: user_tl_001 (2025)"
+    category: hr
+    sub_type: hr.personnel
+    sensitivity: Critical
+    language: ko
+    subject: user_tl_001
+    body: |
+      # 2025년 인사평가: user_tl_001 (이수진)
+
+      Subject: user_tl_001 (Backend Team Lead, M3)
+      Reviewer: user_exec_001 (Tech Division VP)
+      Period: 2025-01-01 ~ 2025-12-31
+
+      ## 종합 평가: A+
+
+      ## Strengths
+      - Backend 팀 헤드카운트 3명에서 7명으로 안정적 확장, 이탈자 0
+      - Project Alpha (외부 컨설팅 협력) 일정·예산 모두 준수
+      - 팀 내 코드 품질 지표 (test coverage, defect rate) 전사 최상위 유지
+
+      ## Areas for Improvement
+      - 본인 직접 코딩 비중이 여전히 30% 수준 (매니저 역할 비중 부족)
+      - Cross-division 회의에서 전략적 의견 표명 강화 필요
+
+      ## Promotion Readiness
+      M4 (Engineering Director) 승진 후보. 2026년 하반기 평가 시 재검토.
+
+      ## 합의 사항
+      - 2026 H1: 직접 코딩 비중 15% 이하로 조정, 멘토링·기술 의사결정 비중 확대
+      - Quarterly Business Review 발표 담당
+
+      본 평가는 양자 합의되었습니다.
+    expected_readers: [user_tl_001, hr_specialist, auditor]
+
+  - id: DOC-008
+    title: "Backend Engineer Hiring Pipeline Q4 2026"
+    category: hr
+    sub_type: hr.recruitment
+    sensitivity: Medium
+    language: mixed
+    body: |
+      # Backend Engineer 채용 Pipeline (2026 Q4)
+
+      Hiring Manager: user_tl_001
+      Target: L2~L3 Backend Engineer 2명
+      Open Date: 2026-10-01
+      Target Close: 2026-12-31
+
+      ## Funnel Status (as of 2026-10-15)
+      - Sourced:        47
+      - Screened:       23
+      - Phone Screen:   11
+      - Tech Interview:  6
+      - Final Round:     3
+      - Offer Extended:  1
+      - Hired:           0
+
+      ## 평가 기준
+      1. 시스템 설계 능력 (Distributed system, message queue 경험)
+      2. 코드 품질 (Live coding 세션 기준)
+      3. Cross-team collaboration 적합도
+
+      ## Top Candidates (anonymized)
+      - Candidate A: Backend L3, ex-FinTech 5y, final round 대기
+      - Candidate B: Backend L2, ex-BigTech 3y, tech interview 통과
+      - Candidate C: Backend L3, ex-Startup CTO, sourcing 단계
+
+      ## 다음 단계
+      - Candidate A 최종 인터뷰 (2026-10-20, user_exec_001 참여)
+      - Candidate B 평판 조회
+
+      문의: user_hrs_001 (HR Recruiter)
+    expected_readers: [hr_specialist, executive, user_tl_001]
