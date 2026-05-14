@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: paw-rag-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pawrag_user
+      POSTGRES_PASSWORD: pawrag_password
+      POSTGRES_DB: permission_aware_rag
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pawrag_user -d permission_aware_rag"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
