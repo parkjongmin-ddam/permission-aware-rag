@@ -11,8 +11,11 @@ from permission_aware_rag.db.session import close_pool, init_pool
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage application lifecycle — DB pool startup/shutdown."""
+    """Manage application lifecycle — DB pool + embedder preload."""
     await init_pool()
+    # Preload embedder so first /query isn't slow (loading takes ~10-30s)
+    from permission_aware_rag.retrieval.embedder import get_embedder
+    get_embedder()
     yield
     await close_pool()
 
