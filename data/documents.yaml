@@ -941,6 +941,7 @@ documents:
     language: mixed
     project_id: project_delta
     project_members: [user_emp_001, user_emp_003]
+    expected_readers: [user_emp_001, user_emp_003]
     body: |
       # Project Delta: Sprint 14 Planning
 
