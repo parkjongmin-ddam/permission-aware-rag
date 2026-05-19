@@ -23,9 +23,9 @@ class Settings(BaseSettings):
 
     # Database (used in Stage 2)
     database_url: str = (
-        "postgresql+psycopg://user:password@localhost:5432/permission_aware_rag"
+        "postgresql://pawrag_user:pawrag_password@localhost:5432/permission_aware_rag"
     )
-
+    
     # JWT (used in Stage 4)
     jwt_secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"

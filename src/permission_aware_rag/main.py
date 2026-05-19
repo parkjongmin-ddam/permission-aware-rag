@@ -1,25 +1,39 @@
-"""FastAPI application entry points."""
+"""FastAPI application entry point."""
+
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
 from permission_aware_rag.api.routes import health
 from permission_aware_rag.config import settings
+from permission_aware_rag.db.session import close_pool, init_pool
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle — DB pool startup/shutdown."""
+    await init_pool()
+    yield
+    await close_pool()
+
 
 app = FastAPI(
-    title="Permission-aware-RAG",
+    title="Permission-aware RAG",
     description=(
-        "A LangGraup-based RAG system with multi-dimensional permission filtering"
-        "(RBAC + ReBAC + ABAC)"        
+        "A LangGraph-based RAG system with multi-dimensional permission filtering "
+        "(RBAC + ReBAC + ABAC)."
     ),
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan,
 )
 
-#Routers
+# Routers
 app.include_router(health.router)
 
+
 @app.get("/")
-async def root() -> dict[str,str]:
-    """Root endpoint - basic service identification."""
+async def root() -> dict[str, str]:
+    """Root endpoint — basic service identification."""
     return {
         "service": "permission-aware-rag",
         "version": "0.1.0",
