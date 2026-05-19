@@ -197,3 +197,125 @@ def incident_rule(
             f"(role={principal.role}, severity={severity})"
         ),
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 4.2.4 — Auditor special access + RBAC default matrix
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def audit_rule(
+    principal: Principal, document: dict
+) -> Optional[PolicyDecision]:
+    """Auditor with active engagement gets read access to most documents.
+
+    Exclusions (privacy/privilege boundaries even auditors cannot cross):
+    - hr.personnel: personal HR records remain subject-only (privacy)
+    - legal.litigation with disclosure_level='privileged': attorney-client
+      privilege not waived by audit engagement.
+
+    Auditors WITHOUT an engagement_id get no special access (fall through).
+    """
+    if principal.role != "auditor":
+        return None
+
+    if principal.audit_engagement_id is None:
+        # Auditor not currently engaged — no special privilege
+        return None
+
+    sub_type = document.get("sub_type")
+
+    # Exclusion 1: Personal HR records
+    if sub_type == "hr.personnel":
+        return None  # let self_access (which already ran) handle, or fall to default deny
+
+    # Exclusion 2: Privileged litigation
+    if sub_type == "legal.litigation":
+        if document.get("disclosure_level") == "privileged":
+            return PolicyDecision.deny(
+                rule_name="audit",
+                reason=(
+                    f"auditor cannot access privileged litigation "
+                    f"{document.get('case_id')} (attorney-client privilege)"
+                ),
+            )
+
+    # Default: auditor gets oversight read access
+    return PolicyDecision.allow(
+        rule_name="audit",
+        reason=(
+            f"auditor with engagement {principal.audit_engagement_id} "
+            f"(oversight read on {sub_type})"
+        ),
+    )
+
+
+# Role-based default access matrix.
+# Lists the sub_types each role can read by default (no special condition needed).
+# sub_types NOT listed for a role → fall through to default deny.
+#
+# Note: role-specific override rules (project_rule, parties_rule, incident_rule,
+# self_access_rule) run BEFORE this. This is the catch-all for "ordinary" access.
+ROLE_DEFAULTS: dict[str, frozenset[str]] = {
+    "employee": frozenset({
+        "hr.policy", "hr.handbook",
+        "tech.runbook", "tech.documentation",
+        "marketing.public",
+        "legal.public",
+    }),
+    "team_lead": frozenset({
+        # employee defaults + team lead additions
+        "hr.policy", "hr.handbook",
+        "tech.runbook", "tech.documentation",
+        "marketing.public", "marketing.internal",
+        "legal.public",
+        "finance.budget",  # budget visibility for planning
+    }),
+    "executive": frozenset({
+        # broad strategic access
+        "hr.policy", "hr.handbook",
+        "tech.runbook", "tech.documentation",
+        "marketing.public", "marketing.internal", "marketing.campaign",
+        "legal.public", "legal.contract", "legal.opinion",
+        "finance.budget", "finance.statement", "finance.forecast",
+    }),
+    "security_officer": frozenset({
+        # security incidents handled by incident_rule
+        "hr.policy",
+        "tech.runbook", "tech.documentation",
+        "legal.public", "legal.contract",
+        "marketing.public",
+        "security.policy", "security.audit", "security.training",
+    }),
+    "hr_specialist": frozenset({
+        "hr.policy", "hr.handbook", "hr.personnel", "hr.training",
+        "marketing.public",
+        "legal.public", "legal.contract",  # employment contracts
+    }),
+    "contractor": frozenset({
+        # Project access handled by project_rule
+        "marketing.public",
+    }),
+    "auditor": frozenset(),  # auditor uses audit_rule exclusively
+}
+
+
+def rbac_default(
+    principal: Principal, document: dict
+) -> Optional[PolicyDecision]:
+    """Role-based catch-all access for unmatched documents.
+
+    Last rule in the pipeline. If a role has the document's sub_type listed
+    in ROLE_DEFAULTS, allow. Otherwise, fall through (which means default deny
+    in the orchestrator).
+    """
+    sub_type = document.get("sub_type")
+    allowed = ROLE_DEFAULTS.get(principal.role, frozenset())
+
+    if sub_type in allowed:
+        return PolicyDecision.allow(
+            rule_name="rbac_default",
+            reason=f"role {principal.role} has default access to {sub_type}",
+        )
+
+    return None
