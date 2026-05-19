@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from permission_aware_rag.api.routes import health
+from permission_aware_rag.api.routes import auth, health   # ← auth 추가
 from permission_aware_rag.config import settings
 from permission_aware_rag.db.session import close_pool, init_pool
 
@@ -29,6 +29,7 @@ app = FastAPI(
 
 # Routers
 app.include_router(health.router)
+app.include_router(auth.router)
 
 
 @app.get("/")

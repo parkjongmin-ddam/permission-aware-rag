@@ -23,6 +23,7 @@ dependencies = [
     # Embedding & data loading
     "sentence-transformers>=3.0",
     "pyyaml>=6.0",
+    "pyjwt>=2.10",
     # LangGraph / LangChain
     "langgraph>=0.2",
     "langchain>=0.3",
