@@ -251,11 +251,23 @@ def audit_rule(
 
 
 # Role-based default access matrix.
-# Lists the sub_types each role can read by default (no special condition needed).
-# sub_types NOT listed for a role → fall through to default deny.
 #
-# Note: role-specific override rules (project_rule, parties_rule, incident_rule,
-# self_access_rule) run BEFORE this. This is the catch-all for "ordinary" access.
+# Status: legacy implementation — schema drift acknowledged.
+# See docs/schema-drift-migration-plan.md for the production migration plan
+# (sensitivity-field based redesign, deferred to M4+).
+#
+# Background: this matrix was designed with sensitivity-based sub_type
+# vocabulary (.handbook, .public, .documentation, .internal, ...) intended
+# to describe document exposure levels. The data layer was later
+# instantiated with topic-based sub_type vocabulary (.policy, .recruitment,
+# .architecture, ...) describing document content. As a result, several
+# entries below reference sub_types that don't exist in data, and several
+# real data sub_types have no role assignment.
+#
+# The M3.3 evaluation harness surfaces this drift quantitatively as
+# elevated Truth=0 rates. This is intentional — patching the matrix
+# in-place would conceal the drift. The proper resolution is the
+# sensitivity migration documented in the plan above.
 ROLE_DEFAULTS: dict[str, frozenset[str]] = {
     "employee": frozenset({
         "hr.policy", "hr.handbook",
