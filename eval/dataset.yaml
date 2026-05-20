@@ -1,0 +1,207 @@
+# RAGAS evaluation dataset for permission-aware RAG.
+#
+# Each test case lists topically-relevant documents (regardless of permission)
+# and the personas to test. The eval harness computes per-persona truth as
+# the subset that can_read() actually allows, then measures precision/recall
+# against the system's actual top-K output.
+
+test_cases:
+  # ========================================
+  # Original 6 cases (M3.3 initial dataset)
+  # ========================================
+
+  - id: TC-001
+    query: "휴가 정책이 어떻게 되나요?"
+    description: "HR policy query — vacation. Tests RBAC default access."
+    relevant_docs:
+      - DOC-001
+      - DOC-002
+    personas:
+      - user_emp_001
+      - user_emp_002
+      - user_aud_001
+
+  - id: TC-002
+    query: "project alpha architecture and deliverables"
+    description: "Tech project. Tests ABAC project_members rule."
+    relevant_docs:
+      - DOC-022
+    personas:
+      - user_ext_001
+      - user_emp_001
+
+  - id: TC-003
+    query: "production incident response procedure"
+    description: "Tech runbook. Tests RBAC default for employee."
+    relevant_docs:
+      - DOC-020
+    personas:
+      - user_emp_001
+      - user_tl_001
+      - user_ext_001
+
+  - id: TC-004
+    query: "내 비용 보고서 확인"
+    description: "Self-access expense report. Tests self_access_rule."
+    relevant_docs:
+      - DOC-030
+    personas:
+      - user_emp_001
+      - user_emp_002
+      - user_aud_001
+
+  - id: TC-005
+    query: "security incident response and breach handling"
+    description: "Security incident query. Tests incident_rule (security_officer path)."
+    relevant_docs:
+      - DOC-010
+      - DOC-011
+      - DOC-012
+      - DOC-013
+    personas:
+      - user_sec_001
+      - user_emp_001
+
+  - id: TC-006
+    query: "성과 평가 본인 기록"
+    description: "Self-access HR personnel. Strict subject match."
+    relevant_docs:
+      - DOC-006
+    personas:
+      - user_emp_001
+      - user_emp_002
+      - user_hrs_001
+
+  # ========================================
+  # New 12 cases (M3.3 expansion — rule + category + persona coverage)
+  # ========================================
+
+  - id: TC-007
+    query: "ExternalCo consulting agreement terms"
+    description: "Legal contract — tests parties_rule (untested before)."
+    relevant_docs:
+      - DOC-040
+    personas:
+      - user_ext_001       # ExternalCo is the contractor party
+      - user_emp_001       # not a party — should be denied
+      - user_aud_001       # auditor sees contracts
+
+  - id: TC-008
+    query: "cloud vendor service agreement scope"
+    description: "Another legal.contract — tests parties_rule with different parties."
+    relevant_docs:
+      - DOC-041
+    personas:
+      - user_exec_001      # may be party / signatory
+      - user_emp_001       # not party
+      - user_aud_001
+
+  - id: TC-009
+    query: "ExternalCo dispute litigation case"
+    description: "Legal litigation — tests parties_rule fallthrough + audit exclusion."
+    relevant_docs:
+      - DOC-044
+    personas:
+      - user_ext_001       # opposing party
+      - user_aud_001       # auditor — privileged litigation EXCLUDED from audit_rule
+      - user_exec_001      # may be briefed
+
+  - id: TC-010
+    query: "직원 성과 평가 결과 전체"
+    description: "HR personnel from auditor — tests audit_rule EXCLUSION (privacy)."
+    relevant_docs:
+      - DOC-006
+      - DOC-007
+    personas:
+      - user_aud_001       # SHOULD be denied — audit_rule excludes hr.personnel
+      - user_emp_001       # only own (DOC-006) via self_access
+      - user_hrs_001       # HR specialist — depends on rbac
+
+  - id: TC-011
+    query: "데이터 유출 사고 executive briefing"
+    description: "Incident query — tests incident_rule exec_briefed path."
+    relevant_docs:
+      - DOC-012
+      - DOC-013
+    personas:
+      - user_exec_001      # exec — allowed only if executive_briefed on doc
+      - user_sec_001       # security_officer path (already known)
+      - user_emp_001       # general employee — denied
+
+  - id: TC-012
+    query: "insider threat investigation case"
+    description: "Specific incident — tests incident_rule stakeholder path."
+    relevant_docs:
+      - DOC-013
+    personas:
+      - user_sec_001
+      - user_tl_001        # possibly stakeholder if listed in DOC-013
+      - user_emp_001
+
+  - id: TC-013
+    query: "password policy and security guidelines"
+    description: "security.policy — broad RBAC, tests common-read for all personas."
+    relevant_docs:
+      - DOC-009
+      - DOC-010
+    personas:
+      - user_emp_003       # previously untested employee
+      - user_ext_001       # contractor — typically gets security.policy
+      - user_sec_001
+
+  - id: TC-014
+    query: "microservices architecture and communication patterns"
+    description: "tech.architecture — never tested category. Engineering audience."
+    relevant_docs:
+      - DOC-016
+      - DOC-017
+    personas:
+      - user_emp_001       # engineer
+      - user_emp_003       # engineer
+      - user_ext_001       # contractor — depends on rbac
+
+  - id: TC-015
+    query: "annual budget 2026 departmental allocation"
+    description: "finance.budget — restricted. Tests executive vs employee divide."
+    relevant_docs:
+      - DOC-026
+      - DOC-027
+    personas:
+      - user_exec_001      # executive — likely allowed
+      - user_aud_001       # auditor — allowed
+      - user_emp_001       # general employee — denied
+
+  - id: TC-016
+    query: "직원 채용 프로세스 백엔드 엔지니어"
+    description: "hr.recruitment — never tested. HR-restricted category."
+    relevant_docs:
+      - DOC-008
+    personas:
+      - user_hrs_001       # HR specialist
+      - user_tl_001        # team lead may participate in hiring
+      - user_emp_001       # general — likely denied
+
+  - id: TC-017
+    query: "marketing campaign and brand guidelines"
+    description: "marketing — never tested. Broad employee access?"
+    relevant_docs:
+      - DOC-034
+      - DOC-036
+    personas:
+      - user_emp_002       # marketing dept
+      - user_emp_001       # engineering dept — depends on rbac
+      - user_aud_001
+
+  - id: TC-018
+    query: "PIPA GDPR compliance and regulatory reports"
+    description: "legal.regulatory + legal.opinion — auditor sweet spot."
+    relevant_docs:
+      - DOC-042
+      - DOC-043
+    personas:
+      - user_aud_001       # broad audit access
+      - user_sec_001       # compliance overlap with security
+      - user_emp_001       # general — denied
+
+config:
+  top_k: 5
