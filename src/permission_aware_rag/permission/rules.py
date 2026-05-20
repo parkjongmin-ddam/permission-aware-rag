@@ -250,25 +250,31 @@ def audit_rule(
     )
 
 
-# Role-based default access matrix.
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 4.2.4 — RBAC default matrix
 #
-# Status: legacy implementation — schema drift acknowledged.
-# See docs/schema-drift-migration-plan.md for the production migration plan
-# (sensitivity-field based redesign, deferred to M4+).
+# M4.0 migration in progress (see docs/schema-drift-migration-plan.md):
+# - LEGACY_ROLE_DEFAULTS: sub_type-keyed matrix used by rbac_default.
+#   Will be deleted in Step 5 when the switch is flipped.
+# - ROLE_DEFAULTS: new sensitivity-keyed matrix used by sensitivity_rule.
+#   Currently dormant — sensitivity_rule is defined but NOT wired into
+#   policy.RULES yet.
 #
-# Background: this matrix was designed with sensitivity-based sub_type
-# vocabulary (.handbook, .public, .documentation, .internal, ...) intended
-# to describe document exposure levels. The data layer was later
-# instantiated with topic-based sub_type vocabulary (.policy, .recruitment,
-# .architecture, ...) describing document content. As a result, several
-# entries below reference sub_types that don't exist in data, and several
-# real data sub_types have no role assignment.
+# During Steps 1-4 the system behaves identically to pre-migration:
+# rbac_default reads from LEGACY_ROLE_DEFAULTS, sensitivity_rule is unused.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# LEGACY (sub_type-keyed) — used by rbac_default until Step 5.
 #
-# The M3.3 evaluation harness surfaces this drift quantitatively as
-# elevated Truth=0 rates. This is intentional — patching the matrix
-# in-place would conceal the drift. The proper resolution is the
-# sensitivity migration documented in the plan above.
-ROLE_DEFAULTS: dict[str, frozenset[str]] = {
+# Background: designed with sensitivity-based sub_type vocabulary
+# (.handbook, .public, .documentation, .internal, ...) intended to describe
+# document exposure levels. The data layer was later instantiated with
+# topic-based sub_type vocabulary (.policy, .recruitment, .architecture, ...)
+# describing document content. As a result, several entries below reference
+# sub_types that don't exist in data, and several real data sub_types have
+# no role assignment. M3.3 eval surfaced this drift quantitatively.
+LEGACY_ROLE_DEFAULTS: dict[str, frozenset[str]] = {
     "employee": frozenset({
         "hr.policy", "hr.handbook",
         "tech.runbook", "tech.documentation",
@@ -312,17 +318,34 @@ ROLE_DEFAULTS: dict[str, frozenset[str]] = {
 }
 
 
+# NEW (sensitivity-keyed) — activated in Step 5 via sensitivity_rule.
+# Each role declares the maximum sensitivity it can read by default;
+# more specialized access still flows through upstream ABAC rules.
+ROLE_DEFAULTS: dict[str, frozenset[str]] = {
+    "employee":         frozenset({"public"}),
+    "team_lead":        frozenset({"public", "internal"}),
+    "executive":        frozenset({"public", "internal", "restricted"}),
+    "security_officer": frozenset({"public", "internal", "restricted"}),
+    "hr_specialist":    frozenset({"public", "internal", "restricted"}),
+    "contractor":       frozenset({"public"}),
+    "auditor":          frozenset(),  # audit_rule exclusively
+}
+
+
 def rbac_default(
     principal: Principal, document: dict
 ) -> Optional[PolicyDecision]:
     """Role-based catch-all access for unmatched documents.
 
     Last rule in the pipeline. If a role has the document's sub_type listed
-    in ROLE_DEFAULTS, allow. Otherwise, fall through (which means default deny
-    in the orchestrator).
+    in LEGACY_ROLE_DEFAULTS, allow. Otherwise, fall through (which means
+    default deny in the orchestrator).
+
+    M4.0 migration note: reads from LEGACY_ROLE_DEFAULTS, not ROLE_DEFAULTS.
+    Will be replaced by sensitivity_rule in Step 5.
     """
     sub_type = document.get("sub_type")
-    allowed = ROLE_DEFAULTS.get(principal.role, frozenset())
+    allowed = LEGACY_ROLE_DEFAULTS.get(principal.role, frozenset())
 
     if sub_type in allowed:
         return PolicyDecision.allow(
@@ -330,4 +353,31 @@ def rbac_default(
             reason=f"role {principal.role} has default access to {sub_type}",
         )
 
+    return None
+
+
+def sensitivity_rule(
+    principal: Principal, document: dict
+) -> Optional[PolicyDecision]:
+    """Role-based access by document sensitivity level.
+
+    Replaces the legacy sub_type-keyed LEGACY_ROLE_DEFAULTS matrix in Step 5.
+    Each role declares the maximum sensitivity it can read by default; more
+    specialized access still flows through upstream ABAC rules.
+
+    Status: dormant until permission/policy.py:RULES is updated in Step 5.
+    """
+    sensitivity = document.get("sensitivity")
+    if sensitivity is None:
+        return None  # documents without sensitivity → no default access
+
+    allowed = ROLE_DEFAULTS.get(principal.role, frozenset())
+    if sensitivity in allowed:
+        return PolicyDecision.allow(
+            rule_name="sensitivity",
+            reason=(
+                f"role {principal.role} reads {sensitivity} documents "
+                f"(sub_type={document.get('sub_type')})"
+            ),
+        )
     return None
