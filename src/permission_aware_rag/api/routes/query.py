@@ -16,6 +16,7 @@ router = APIRouter(prefix="/query", tags=["query"])
 class QueryRequest(BaseModel):
     query: str
     top_k: int = 5
+    use_reranker: bool = True
 
 
 class DocumentResult(BaseModel):
@@ -46,7 +47,12 @@ async def query_documents(
     Every query is recorded to audit_log regardless of outcome.
     Counts reflect the full set of permission decisions, not just displayed docs.
     """
-    result = await retrieve(principal, request.query, top_k=request.top_k)
+    result = await retrieve(
+        principal,
+        request.query,
+        top_k=request.top_k,
+        use_reranker=request.use_reranker,
+    )
 
     # Audit log captures ALL permission decisions, regardless of display
     await write_audit_log(
