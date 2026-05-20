@@ -37,7 +37,7 @@ documents:
     title: "Employee Handbook 2026"
     category: hr
     sub_type: hr.policy
-    sensitivity: Low
+    sensitivity: public
     language: ko
     body: |
       # BWCorp 직원 핸드북 2026
@@ -65,7 +65,7 @@ documents:
     title: "Leave Policy v3.2"
     category: hr
     sub_type: hr.policy
-    sensitivity: Low
+    sensitivity: public
     language: ko
     body: |
       # 휴가 정책 v3.2
@@ -95,7 +95,7 @@ documents:
     title: "Remote Work Guidelines"
     category: hr
     sub_type: hr.policy
-    sensitivity: Low
+    sensitivity: public
     language: ko
     body: |
       # 재택근무 가이드라인 (2026)
@@ -125,7 +125,7 @@ documents:
     title: "2026 Salary Band Reference"
     category: hr
     sub_type: hr.compensation
-    sensitivity: High
+    sensitivity: restricted
     language: mixed
     body: |
       # 2026 Salary Band Reference (Confidential)
@@ -159,7 +159,7 @@ documents:
     title: "Bonus Structure FY2026"
     category: hr
     sub_type: hr.compensation
-    sensitivity: High
+    sensitivity: restricted
     language: ko
     body: |
       # 성과급(Bonus) 산정 기준 FY2026
@@ -194,7 +194,7 @@ documents:
     title: "Performance Review: user_emp_001 (2025)"
     category: hr
     sub_type: hr.personnel
-    sensitivity: Critical
+    sensitivity: restricted
     language: ko
     subject: user_emp_001
     body: |
@@ -229,7 +229,7 @@ documents:
     title: "Performance Review: user_tl_001 (2025)"
     category: hr
     sub_type: hr.personnel
-    sensitivity: Critical
+    sensitivity: restricted
     language: ko
     subject: user_tl_001
     body: |
@@ -264,7 +264,7 @@ documents:
     title: "Backend Engineer Hiring Pipeline Q4 2026"
     category: hr
     sub_type: hr.recruitment
-    sensitivity: Medium
+    sensitivity: internal
     language: mixed
     body: |
       # Backend Engineer 채용 Pipeline (2026 Q4)
@@ -308,7 +308,7 @@ documents:
     title: "Password Policy v2.1"
     category: security
     sub_type: security.policy
-    sensitivity: Low
+    sensitivity: public
     language: ko
     body: |
       # BWCorp 비밀번호 정책 v2.1
@@ -342,7 +342,7 @@ documents:
     title: "Information Security Code of Conduct"
     category: security
     sub_type: security.policy
-    sensitivity: Low
+    sensitivity: public
     language: ko
     body: |
       # BWCorp 정보보안 행동강령
@@ -375,7 +375,7 @@ documents:
     title: "INC-2026-08-001: Suspicious Login Attempt"
     category: security
     sub_type: security.incident
-    sensitivity: Critical
+    sensitivity: restricted
     language: mixed
     severity: high
     executive_briefed: false
@@ -412,7 +412,7 @@ documents:
     title: "INC-2026-09-003: Data Exfiltration Attempt"
     category: security
     sub_type: security.incident
-    sensitivity: Critical
+    sensitivity: restricted
     language: mixed
     severity: critical
     executive_briefed: true
@@ -452,7 +452,7 @@ documents:
     title: "INC-2026-09-005: Insider Threat Investigation"
     category: security
     sub_type: security.incident
-    sensitivity: Critical
+    sensitivity: restricted
     language: mixed
     severity: high
     executive_briefed: false
@@ -491,7 +491,7 @@ documents:
     title: "Q3 2026 Threat Landscape Brief"
     category: security
     sub_type: security.threat_intel
-    sensitivity: High
+    sensitivity: restricted
     language: mixed
     body: |
       # Q3 2026 Threat Landscape Brief
@@ -520,7 +520,7 @@ documents:
     title: "SOC2 Type II Audit Report 2025"
     category: security
     sub_type: security.compliance
-    sensitivity: High
+    sensitivity: restricted
     language: mixed
     tags: [audit]
     body: |
@@ -563,7 +563,7 @@ documents:
     title: "BWCorp Infrastructure Architecture v3"
     category: tech
     sub_type: tech.architecture
-    sensitivity: Medium
+    sensitivity: internal
     language: mixed
     body: |
       # BWCorp Infrastructure Architecture v3
@@ -599,7 +599,7 @@ documents:
     title: "Microservices Communication Patterns"
     category: tech
     sub_type: tech.architecture
-    sensitivity: Medium
+    sensitivity: internal
     language: mixed
     body: |
       # Microservices Communication Patterns
@@ -637,7 +637,7 @@ documents:
     title: "Payment API v2 Specification"
     category: tech
     sub_type: tech.api
-    sensitivity: Low
+    sensitivity: internal
     language: mixed
     body: |
       # Payment API v2 Specification
@@ -682,7 +682,7 @@ documents:
     title: "SSO Authentication API Guide"
     category: tech
     sub_type: tech.api
-    sensitivity: Low
+    sensitivity: internal
     language: mixed
     body: |
       # SSO Authentication API Guide
@@ -725,7 +725,7 @@ documents:
     title: "Production Incident Response Playbook"
     category: tech
     sub_type: tech.runbook
-    sensitivity: Medium
+    sensitivity: internal
     language: mixed
     body: |
       # Production Incident Response Playbook
@@ -765,7 +765,7 @@ documents:
     title: "Database Migration Procedures"
     category: tech
     sub_type: tech.runbook
-    sensitivity: Medium
+    sensitivity: internal
     language: mixed
     body: |
       # Database Migration Procedures
@@ -807,7 +807,7 @@ documents:
     title: "Project Alpha: Architecture Design"
     category: tech
     sub_type: tech.project
-    sensitivity: Medium
+    sensitivity: restricted
     language: mixed
     project_id: project_alpha
     project_members: [user_tl_001, user_emp_001, user_ext_001]
@@ -850,7 +850,7 @@ documents:
     title: "Project Beta: API Integration Guide"
     category: tech
     sub_type: tech.project
-    sensitivity: Low
+    sensitivity: restricted
     language: mixed
     project_id: project_beta
     project_members: [user_emp_002, user_ext_001]
@@ -892,7 +892,7 @@ documents:
     title: "Project Gamma: Initial PRD"
     category: tech
     sub_type: tech.project
-    sensitivity: High
+    sensitivity: restricted
     language: mixed
     project_id: project_gamma
     project_members: [user_exec_001, user_tl_001]
@@ -937,7 +937,7 @@ documents:
     title: "Project Delta: Sprint Planning"
     category: tech
     sub_type: tech.project
-    sensitivity: Low
+    sensitivity: restricted
     language: mixed
     project_id: project_delta
     project_members: [user_emp_001, user_emp_003]
@@ -986,7 +986,7 @@ documents:
     title: "2026 Annual Budget Plan"
     category: finance
     sub_type: finance.budget
-    sensitivity: High
+    sensitivity: restricted
     language: mixed
     body: |
       # 2026 Annual Budget Plan
@@ -1024,7 +1024,7 @@ documents:
     title: "Q4 2026 Departmental Budget Allocation"
     category: finance
     sub_type: finance.budget
-    sensitivity: High
+    sensitivity: restricted
     language: mixed
     body: |
       # Q4 2026 Departmental Budget Allocation
@@ -1061,7 +1061,7 @@ documents:
     title: "2025 Annual Financial Report (Audited)"
     category: finance
     sub_type: finance.statement
-    sensitivity: Critical
+    sensitivity: restricted
     language: mixed
     body: |
       # 2025 Annual Financial Report (Audited)
@@ -1105,7 +1105,7 @@ documents:
     title: "Q3 2026 P&L Statement"
     category: finance
     sub_type: finance.statement
-    sensitivity: Critical
+    sensitivity: restricted
     language: mixed
     body: |
       # Q3 2026 P&L Statement
@@ -1152,7 +1152,7 @@ documents:
     title: "Expense Report: user_emp_001 (2026-09)"
     category: finance
     sub_type: finance.expense
-    sensitivity: Medium
+    sensitivity: restricted
     language: mixed
     subject: user_emp_001
     body: |
@@ -1193,7 +1193,7 @@ documents:
     title: "Expense Report: user_emp_002 (2026-09)"
     category: finance
     sub_type: finance.expense
-    sensitivity: Medium
+    sensitivity: restricted
     language: mixed
     subject: user_emp_002
     body: |
@@ -1232,7 +1232,7 @@ documents:
     title: "Expense Report: user_tl_001 (2026-09)"
     category: finance
     sub_type: finance.expense
-    sensitivity: Medium
+    sensitivity: restricted
     language: mixed
     subject: user_tl_001
     body: |
@@ -1273,7 +1273,7 @@ documents:
     title: "2025 Corporate Tax Filing"
     category: finance
     sub_type: finance.tax
-    sensitivity: Critical
+    sensitivity: privileged
     language: mixed
     body: |
       # 2025 Corporate Tax Filing (법인세 신고)
@@ -1323,7 +1323,7 @@ documents:
     title: "Fall 2026 Campaign Plan"
     category: marketing
     sub_type: marketing.campaign
-    sensitivity: Low
+    sensitivity: internal
     language: mixed
     body: |
       # Fall 2026 Campaign Plan
@@ -1360,7 +1360,7 @@ documents:
     title: "New SaaS Product Launch Campaign"
     category: marketing
     sub_type: marketing.campaign
-    sensitivity: Low
+    sensitivity: internal
     language: mixed
     body: |
       # New SaaS Product Launch Campaign: BWCorp Identity Cloud
@@ -1401,7 +1401,7 @@ documents:
     title: "BWCorp Brand Guidelines 2026"
     category: marketing
     sub_type: marketing.brand
-    sensitivity: Low
+    sensitivity: public
     language: mixed
     body: |
       # BWCorp Brand Guidelines 2026
@@ -1448,7 +1448,7 @@ documents:
     title: "Logo Usage Manual"
     category: marketing
     sub_type: marketing.brand
-    sensitivity: Low
+    sensitivity: public
     language: mixed
     body: |
       # BWCorp Logo Usage Manual
@@ -1489,7 +1489,7 @@ documents:
     title: "2026 IT Solutions Market Analysis"
     category: marketing
     sub_type: marketing.research
-    sensitivity: Medium
+    sensitivity: internal
     language: mixed
     body: |
       # 2026 IT Solutions Market Analysis
@@ -1529,7 +1529,7 @@ documents:
     title: "Competitive Landscape Q3 2026"
     category: marketing
     sub_type: marketing.research
-    sensitivity: Medium
+    sensitivity: internal
     language: mixed
     body: |
       # Competitive Landscape Q3 2026
@@ -1578,7 +1578,7 @@ documents:
     title: "ExternalCo Consulting Service Agreement"
     category: legal
     sub_type: legal.contract
-    sensitivity: High
+    sensitivity: restricted
     language: mixed
     parties: [user_exec_001, user_ext_001]
     body: |
@@ -1626,7 +1626,7 @@ documents:
     title: "Cloud Vendor MSA 2026"
     category: legal
     sub_type: legal.contract
-    sensitivity: High
+    sensitivity: restricted
     language: mixed
     parties: [user_exec_001, user_tl_001]
     body: |
@@ -1675,7 +1675,7 @@ documents:
     title: "PIPA Compliance Report 2026"
     category: legal
     sub_type: legal.regulatory
-    sensitivity: High
+    sensitivity: internal
     language: mixed
     body: |
       # 개인정보보호법(PIPA) 컴플라이언스 보고서 2026
@@ -1721,7 +1721,7 @@ documents:
     title: "GDPR Applicability Legal Opinion"
     category: legal
     sub_type: legal.opinion
-    sensitivity: Critical
+    sensitivity: restricted
     language: mixed
     case_id: ADV-2026-014
     parties: [user_exec_001]
@@ -1771,11 +1771,11 @@ documents:
     title: "ExternalCo Dispute Case 2026-001"
     category: legal
     sub_type: legal.litigation
-    sensitivity: Critical
+    sensitivity: privileged
     language: mixed
     case_id: CASE-2026-001
     parties: [user_exec_001]
-    disclosure_level: executive_briefing
+    disclosure_level: privileged
     body: |
       # Litigation Case: ExternalCo Dispute (CASE-2026-001)
 
@@ -1820,7 +1820,7 @@ documents:
     title: "IP Infringement Defense Case 2025-007"
     category: legal
     sub_type: legal.litigation
-    sensitivity: Critical
+    sensitivity: privileged
     language: mixed
     case_id: CASE-2025-007
     parties: [user_tl_001]
@@ -1865,3 +1865,4 @@ documents:
       본 문서는 명시된 당사자(user_tl_001) 및 Legal 부서 외 공유 절대 금지. 변호사
       비밀유지특권 대상.
     expected_readers: [user_tl_001]
+    disclosure_level: privileged

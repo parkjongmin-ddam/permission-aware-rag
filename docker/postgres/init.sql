@@ -19,7 +19,7 @@ CREATE TABLE documents (
     -- Classification
     category        VARCHAR(20) NOT NULL,                    -- hr, security, tech, ...
     sub_type        VARCHAR(50) NOT NULL,                    -- hr.policy, etc.
-    sensitivity     VARCHAR(10) NOT NULL,                    -- Low | Medium | High | Critical
+    sensitivity     VARCHAR(20) NOT NULL,                    -- public | internal | restricted | privileged
     language        VARCHAR(10) NOT NULL,                    -- ko | en | mixed
 
     -- Content
