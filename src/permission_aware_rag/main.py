@@ -15,7 +15,9 @@ async def lifespan(app: FastAPI):
     await init_pool()
     # Preload embedder so first /query isn't slow (loading takes ~10-30s)
     from permission_aware_rag.retrieval.embedder import get_embedder
+    from permission_aware_rag.retrieval.reranker import get_reranker
     get_embedder()
+    get_reranker()
     yield
     await close_pool()
 

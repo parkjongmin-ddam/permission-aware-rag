@@ -1,20 +1,24 @@
-"""Permission-aware document retrieval.
+"""Permission-aware document retrieval with optional cross-encoder reranking.
 
-Post-filter pattern:
-1. Vector search retrieves top_k * oversample_factor candidates from pgvector
-2. Each candidate is evaluated by can_read(principal, doc)
-3. Allowed up to top_k returned; denied recorded for audit
+Two-stage retrieval:
+1. Embedding stage: pgvector HNSW top top_k * oversample_factor candidates
+2. (Optional) Rerank stage: BGE Reranker v2-m3 keeps top rerank_keep
+3. Permission stage: can_read() filters all reranked candidates
 
-Trade-off: post-filter is simple but can return fewer than top_k if many
-candidates are denied. Pre-filter (encoding policy as SQL WHERE) is faster
-at scale but much more complex. For this demo, post-filter is sufficient
-and pedagogically clearer.
+Returns ALL permission-allowed and permission-denied documents — does not
+truncate to top_k here. The caller (API layer) is responsible for any
+presentation-time slicing. This separation ensures audit logs capture
+the full set of permission decisions, not just what was displayed.
+
+Toggleable via use_reranker. Both signals are preserved on ScoredDocument
+for downstream A/B comparison and observability.
 """
 
 from permission_aware_rag.auth.dependencies import Principal
 from permission_aware_rag.db.session import get_connection
 from permission_aware_rag.permission.policy import can_read
 from permission_aware_rag.retrieval.embedder import embed_query
+from permission_aware_rag.retrieval.reranker import rerank as cross_encoder_rerank
 from permission_aware_rag.retrieval.types import RetrievalResult, ScoredDocument
 
 
@@ -35,20 +39,24 @@ async def retrieve(
     principal: Principal,
     query: str,
     top_k: int = 5,
-    oversample_factor: int = 5,
+    oversample_factor: int = 10,
+    use_reranker: bool = True,
+    rerank_keep: int = 15,
 ) -> RetrievalResult:
-    """Retrieve documents matching `query`, filtered by `principal`'s permissions.
+    """Retrieve documents for `query`, filtered by `principal`'s permissions.
 
     Args:
-        principal: Authenticated caller (from JWT).
+        principal: Authenticated caller.
         query: Natural language query.
-        top_k: How many allowed documents to return.
-        oversample_factor: How much to oversample so post-filter can still
-            return top_k after denials. Total retrieved = top_k * oversample.
+        top_k: Used only to compute the embedding-stage oversample size.
+            The returned `allowed` list is NOT truncated; the caller
+            handles display-time slicing.
+        oversample_factor: Embedding stage fetches top_k * this many candidates.
+        use_reranker: If True, cross-encoder reranks before permission filter.
+        rerank_keep: After reranking, keep this many before permission filter.
 
     Returns:
-        RetrievalResult with `allowed` (visible to caller) and `denied`
-        (filtered out — recorded for audit).
+        RetrievalResult with all allowed (audit-accurate) and denied docs.
     """
     query_emb = embed_query(query)
     fetch_limit = top_k * oversample_factor
@@ -59,14 +67,28 @@ async def retrieve(
             rows = await cur.fetchall()
             columns = [desc[0] for desc in cur.description]
 
-    allowed: list[ScoredDocument] = []
-    denied: list[ScoredDocument] = []
-
+    # Build (doc, similarity, rerank_score) tuples
+    triples: list[tuple[dict, float, float | None]] = []
     for row in rows:
         doc = dict(zip(columns, row))
         similarity = float(doc.pop("similarity"))
-        decision = can_read(principal, doc)
+        triples.append((doc, similarity, None))
 
+    # Optional rerank stage
+    if use_reranker and triples:
+        docs_only = [t[0] for t in triples]
+        sim_lookup = {t[0]["id"]: t[1] for t in triples}
+        reranked = cross_encoder_rerank(query, docs_only)[:rerank_keep]
+        triples = [
+            (doc, sim_lookup[doc["id"]], rerank_score)
+            for doc, rerank_score in reranked
+        ]
+
+    # Permission filter — record ALL decisions, no truncation
+    allowed: list[ScoredDocument] = []
+    denied: list[ScoredDocument] = []
+    for doc, similarity, rerank_score in triples:
+        decision = can_read(principal, doc)
         scored = ScoredDocument(
             id=doc["id"],
             title=doc["title"],
@@ -74,11 +96,11 @@ async def retrieve(
             sub_type=doc["sub_type"],
             similarity=similarity,
             decision=decision,
+            rerank_score=rerank_score,
         )
-
         if decision.is_allowed:
             allowed.append(scored)
         else:
             denied.append(scored)
 
-    return RetrievalResult(allowed=allowed[:top_k], denied=denied)
+    return RetrievalResult(allowed=allowed, denied=denied)
