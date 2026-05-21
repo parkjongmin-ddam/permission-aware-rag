@@ -186,7 +186,9 @@ test_cases:
     description: "marketing — never tested. Broad employee access?"
     relevant_docs:
       - DOC-034
+      - DOC-035
       - DOC-036
+      - DOC-037
     personas:
       - user_emp_002       # marketing dept
       - user_emp_001       # engineering dept — depends on rbac
