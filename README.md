@@ -1,6 +1,5 @@
 ﻿---
 title: Permission Aware RAG
-emoji: ?뵍
 colorFrom: indigo
 colorTo: blue
 sdk: docker
