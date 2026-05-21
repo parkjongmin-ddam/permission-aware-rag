@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     jwt_secret_key: str = _INSECURE_JWT_DEFAULT
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
+    
+    # Answer generation (M4.2). ANTHROPIC_API_KEY required only for /answer.
+    anthropic_api_key: str | None = None
+    answer_model: str = "claude-sonnet-4-6"
+    answer_max_tokens: int = 1024
 
     @model_validator(mode="after")
     def _validate_jwt_secret(self) -> "Settings":

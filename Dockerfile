@@ -30,7 +30,9 @@ RUN pip install --no-cache-dir --user \
         "pgvector>=0.3" \
         "sentence-transformers>=3.0" \
         "pyyaml>=6.0" \
-        "pyjwt>=2.10"
+        "pyjwt>=2.10" \
+        "langchain>=0.3" \
+        "langchain-anthropic>=0.3"
 
 COPY --chown=user:user src/ ./src/
 COPY --chown=user:user pyproject.toml ./
