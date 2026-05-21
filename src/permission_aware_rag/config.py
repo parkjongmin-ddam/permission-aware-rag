@@ -32,6 +32,12 @@ class Settings(BaseSettings):
         "postgresql://pawrag_user:pawrag_password@localhost:5432/permission_aware_rag"
     )
 
+    # Connection pool sizing. Keep small in deployments that sit behind an
+    # external pooler (e.g. Supabase Session pooler) to avoid pooler-on-pooler
+    # connection exhaustion. Local dev can use the defaults comfortably.
+    db_pool_min_size: int = 2
+    db_pool_max_size: int = 10
+
     # JWT (used in Stage 4)
     # The default is an obvious placeholder. It is allowed only in development;
     # any other environment must set JWT_SECRET_KEY to a 32+ byte random value
