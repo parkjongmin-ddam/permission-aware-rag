@@ -16,15 +16,15 @@ short_description: Permission-aware retrieval (RBAC + ReBAC + ABAC)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-?뷀꽣?꾨씪?댁쫰 ?섍꼍?먯꽌 ?ъ슜?먯쓽 IAM 沅뚰븳(??븷쨌?띿꽦)???곕씪 寃??媛?ν븳 臾몄꽌 踰붿쐞媛 ?숈쟻?쇰줈 ?щ씪吏?? LangGraph 湲곕컲 硫?곗뿉?댁쟾??RAG ?쒖뒪??
+엔터프라이즈 환경에서 사용자의 IAM 권한(역할·속성)에 따라 검색 가능한 문서 범위가 동적으로 달라지는, LangGraph 기반 멀티에이전트 RAG 시스템.
 
-## ?????꾨줈?앺듃?멸?
+## 왜 이 프로젝트인가
 
-?뷀꽣?꾨씪?댁쫰 ?몄쬆 ?명봽??ADFS, SAML, OIDC)瑜??ㅻ뀈媛??댁쁺?섎ŉ 愿李고븳 ??媛吏 怨듬갚 ???遺遺꾩쓽 RAG ?덊띁?곗뒪 援ы쁽? *"?꾧뎄??紐⑤뱺 臾몄꽌瑜?寃?됲븷 ???덈떎"*??媛???꾩뿉???숈옉?⑸땲?? ?ㅼ젣 湲곗뾽 ?섍꼍?먯꽌???ъ슜?먯쓽 ??븷(role)怨??띿꽦(attribute)???곕씪 ?묎렐 媛?ν븳 臾몄꽌媛 ?щ씪???섍퀬, ??李⑥씠媛 寃??寃곌낵쨌?듬? ?덉쭏쨌媛먯궗 濡쒓렇??紐⑤몢 諛섏쁺?섏뼱???⑸땲??
+엔터프라이즈 인증 인프라(ADFS, SAML, OIDC)를 다년간 운영하며 관찰한 한 가지 공백 — 대부분의 RAG 레퍼런스 구현은 *"누구나 모든 문서를 검색할 수 있다"*는 가정 위에서 동작합니다. 실제 기업 환경에서는 사용자의 역할(role)과 속성(attribute)에 따라 접근 가능한 문서가 달라야 하고, 이 차이가 검색 결과·답변 품질·감사 로그에 모두 반영되어야 합니다.
 
-???꾨줈?앺듃??洹?怨듬갚??硫붿슦湲??꾪븳 ?ㅽ뿕?낅땲?? ReBAC쨌ABAC 媛숈? IAM 沅뚰븳 紐⑤뜽??RAG ?뚯씠?꾨씪?몄뿉 ?듯빀?섎뒗 ?ㅼ뼇??諛⑹떇(硫뷀??곗씠???ъ쟾 ?꾪꽣留? 寃?????꾪꽣留? 沅뚰븳 媛以묒튂 諛섏쁺)??吏곸젒 援ы쁽쨌痢≪젙쨌鍮꾧탳?⑸땲??
+이 프로젝트는 그 공백을 메우기 위한 실험입니다. ReBAC·ABAC 같은 IAM 권한 모델을 RAG 파이프라인에 통합하는 다양한 방식(메타데이터 사전 필터링, 검색 후 필터링, 권한 가중치 반영)을 직접 구현·측정·비교합니다.
 
-> **李멸퀬**: 蹂??꾨줈?앺듃??媛?곸쓽 ?뚯궗 "BWCorp"瑜??쒕굹由ъ삤濡??ъ슜?섎ŉ, IdP??FastAPI 湲곕컲 mock JWT issuer濡??쒕??덉씠?섑빀?덈떎. ?ㅼ젣 IdP ?듯빀(Keycloak)? stretch goal濡??ㅻ９?덈떎. ??ADFS/AD ?명봽??援ъ텞? 蹂??꾨줈?앺듃??RAG 蹂몄쭏???먮━怨??쒓컙 鍮꾩슜 ?鍮??⑥슜????떎怨??먮떒???섎룄?곸쑝濡??쒖쇅?덉뒿?덈떎.
+> **참고**: 본 프로젝트는 가상의 회사 "BWCorp"를 시나리오로 사용하며, IdP는 FastAPI 기반 mock JWT issuer로 시뮬레이션합니다. 실제 IdP 통합(Keycloak)은 stretch goal로 다룹니다. 실 ADFS/AD 인프라 구축은 본 프로젝트의 RAG 본질을 흐리고 시간 비용 대비 효용이 낮다고 판단해 의도적으로 제외했습니다.
 
 ## System Architecture
 
@@ -37,10 +37,10 @@ flowchart TD
 
     subgraph LangGraph["LangGraph Agent"]
         direction TB
-        Auth["?뵍 Auth Node"] -->|user_ctx| QR["?륅툘 Query Rewrite Node"]
-        QR -->|rewritten_query| Retrieval["?뵇 Retrieval Node"]
-        Retrieval -->|candidate_docs| Rerank["?뱤 Re-ranking Node"]
-        Rerank -->|ranked_docs| Answer["?뮠 Answer Node"]
+        Auth["🔐 Auth Node"] -->|user_ctx| QR["✏️ Query Rewrite Node"]
+        QR -->|rewritten_query| Retrieval["🔍 Retrieval Node"]
+        Retrieval -->|candidate_docs| Rerank["📊 Re-ranking Node"]
+        Rerank -->|ranked_docs| Answer["💬 Answer Node"]
     end
 
     Mock["Mock JWT Issuer"] -.->|verify keys| Auth
@@ -49,7 +49,7 @@ flowchart TD
     PG[("pgvector<br/>+ permission metadata")] -.-> Retrieval
     BGE["BGE Reranker v2-m3"] -.-> Rerank
 
-    Audit["?뱷 Audit Logger"]
+    Audit["📝 Audit Logger"]
     Auth -.-> Audit
     QR -.-> Audit
     Retrieval -.-> Audit
@@ -67,16 +67,16 @@ flowchart TD
     class User,FastAPI userStyle
 ```
 
-LangGraph 湲곕컲 硫?곗뿉?댁쟾??援ъ꽦:
+LangGraph 기반 멀티에이전트 구성:
 
-- **Auth Node** ??JWT 寃利? ?ъ슜????븷쨌?띿꽦 異붿텧
-- **Query Rewrite Node** ??沅뚰븳 而⑦뀓?ㅽ듃瑜?諛섏쁺??荑쇰━ ?ъ옉??
-- **Retrieval Node** ??Vector DB?먯꽌 沅뚰븳 硫뷀??곗씠???꾪꽣留?+ ?섎?寃??
-- **Re-ranking Node** ??BGE Reranker 湲곕컲 沅뚰븳쨌愿?⑤룄 醫낇빀 ?먯닔
-- **Answer Node** ??Citation ?ы븿 ?듬? ?앹꽦, 沅뚰븳 遺議???嫄곕? ?묐떟
-- **Audit Logger** ??紐⑤뱺 寃?됀룸떟蹂 媛먯궗 濡쒓렇
+- **Auth Node** — JWT 검증, 사용자 역할·속성 추출
+- **Query Rewrite Node** — 권한 컨텍스트를 반영한 쿼리 재작성
+- **Retrieval Node** — Vector DB에서 권한 메타데이터 필터링 + 의미검색
+- **Re-ranking Node** — BGE Reranker 기반 권한·관련도 종합 점수
+- **Answer Node** — Citation 포함 답변 생성, 권한 부족 시 거부 응답
+- **Audit Logger** — 모든 검색·답변 감사 로그
 
-> 紐⑤뱺 ?몃뱶???낆텧?μ? 蹂꾨룄??**Audit Logger**??湲곕줉?섏뼱 沅뚰븳 異붿쟻怨??ы썑 媛먯궗瑜?吏?먰빀?덈떎 (?ㅼ씠?닿렇???⑥닚?붾? ?꾪빐 ?쇰? ?곌껐???앸왂).
+> 모든 노드의 입출력은 별도의 **Audit Logger**에 기록되어 권한 추적과 사후 감사를 지원합니다 (다이어그램 단순화를 위해 일부 연결선 생략).
 
 ## Tech Stack
 
@@ -90,27 +90,27 @@ LangGraph 湲곕컲 硫?곗뿉?댁쟾??援ъ꽦:
 
 ## Roadmap
 
-- [x] **M1: Foundation** ??repo ?뗭뾽, ?쒖뒪???ㅺ퀎, BWCorp ?쒕굹由ъ삤쨌?곗씠???ㅽ럺, LangGraph 湲곗큹
-- [x] **M2: MVP** ??FastAPI + pgvector + JWT ?몄쬆 + 沅뚰븳 ?꾪꽣留?+ LangGraph 湲곕낯 ?몃뱶 e2e
-- [x] **M3: Re-ranking & Evaluation** ??BGE Reranker, RAGAS ?ㅽ????됯?, 沅뚰븳 ?꾩닔 ?뚯뒪??
-- [x] **M4: Production Readiness** ??sensitivity 湲곕컲 沅뚰븳 紐⑤뜽 留덉씠洹몃젅?댁뀡, 蹂댁븞 ?섎뱶?? Hugging Face Spaces + Supabase 諛고룷
-- [ ] **M5: Polish & Launch** ??README 由щ씪?댄듃, ?곕え ?곸긽, ?꾪궎?띿쿂 臾몄꽌
+- [x] **M1: Foundation** — repo 셋업, 시스템 설계, BWCorp 시나리오·데이터 스펙, LangGraph 기초
+- [x] **M2: MVP** — FastAPI + pgvector + JWT 인증 + 권한 필터링 + LangGraph 기본 노드 e2e
+- [x] **M3: Re-ranking & Evaluation** — BGE Reranker, RAGAS 스타일 평가, 권한 누수 테스트
+- [x] **M4: Production Readiness** — sensitivity 기반 권한 모델 마이그레이션, 보안 하드닝, Hugging Face Spaces + Supabase 배포
+- [ ] **M5: Polish & Launch** — README 리라이트, 데모 영상, 아키텍처 문서
 
 ## Blog Series
 
-吏꾪뻾 怨쇱젙怨??섏궗寃곗젙 湲곕줉??釉붾줈洹몄뿉 怨듦컻?⑸땲????[parkjongmin-ddam.github.io](https://parkjongmin-ddam.github.io)
+진행 과정과 의사결정 기록을 블로그에 공개합니다 — [parkjongmin-ddam.github.io](https://parkjongmin-ddam.github.io)
 
-- [x] 1?? ?ㅺ퀎? 援ы쁽 (M1+M2)
-- [x] 2?? Reranker, audit log 踰꾧렇, schema drift (M3)
-- [ ] 3?? 諛고룷 諛??댁쁺 ?뚭퀬 (M4+M5)
+- [x] 1편: 설계와 구현 (M1+M2)
+- [x] 2편: Reranker, audit log 버그, schema drift (M3)
+- [ ] 3편: 배포 및 운영 회고 (M4+M5)
 
 ## Setup
 
-> 濡쒖뺄 媛쒕컻 ?섍꼍 ?뗭뾽 媛?대뱶??M5?먯꽌 ?뺣━ ?덉젙. ?듭떖 ?먮쫫:
-> 1. `docker compose up` ?쇰줈 濡쒖뺄 pgvector 湲곕룞 (?먮뒗 Supabase ?곌껐)
-> 2. `.env` ??`DATABASE_URL`, `JWT_SECRET_KEY` ?ㅼ젙
-> 3. `uv run python scripts/ingest.py` 濡?臾몄꽌 + ?꾨쿋???곸옱
-> 4. `uv run uvicorn permission_aware_rag.main:app` 濡?API 湲곕룞
+> 로컬 개발 환경 셋업 가이드는 M5에서 정리 예정. 핵심 흐름:
+> 1. `docker compose up` 으로 로컬 pgvector 기동 (또는 Supabase 연결)
+> 2. `.env` 에 `DATABASE_URL`, `JWT_SECRET_KEY` 설정
+> 3. `uv run python scripts/ingest.py` 로 문서 + 임베딩 적재
+> 4. `uv run uvicorn permission_aware_rag.main:app` 로 API 기동
 
 ## License
 
