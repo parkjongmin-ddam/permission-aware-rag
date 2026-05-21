@@ -3,7 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from permission_aware_rag.audit.log import write_audit_log
 from permission_aware_rag.auth.dependencies import Principal, get_current_principal
@@ -14,12 +14,16 @@ router = APIRouter(prefix="/query", tags=["query"])
 
 
 class QueryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     query: str
     top_k: int = 5
     use_reranker: bool = True
 
 
 class DocumentResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     id: str
     title: str
     body: str
@@ -29,6 +33,8 @@ class DocumentResult(BaseModel):
 
 
 class QueryResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     query: str
     results: list[DocumentResult]
     total_retrieved: int
@@ -65,7 +71,7 @@ async def query_documents(
         audit_engagement_id=principal.audit_engagement_id,
     )
 
-    # Display-time truncation — separate from permission evaluation
+    # Display-time truncation -- separate from permission evaluation
     displayed = result.allowed[:request.top_k]
 
     return QueryResponse(

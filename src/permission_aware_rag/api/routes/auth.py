@@ -2,12 +2,12 @@
 
 In production, replace with real OIDC/SAML flow (ADFS, Okta, Cognito). For
 demo purposes, we issue JWTs for predefined personas without password
-verification — this is acceptable for a portfolio demonstration but must
-never be used in a real system.
+verification -- acceptable for a portfolio demonstration but must never be
+used in a real system.
 """
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from permission_aware_rag.auth.jwt_utils import encode_token
 from permission_aware_rag.auth.personas import PERSONAS
@@ -16,10 +16,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class MockLoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     user_id: str
 
 
 class MockLoginResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     access_token: str
     token_type: str = "bearer"
     persona: dict

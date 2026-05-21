@@ -1,6 +1,12 @@
 """Application configuration via environment variables."""
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
+
+
+# Sentinel for the insecure default JWT key. If this value survives into a
+# non-development environment, startup fails (see _validate_jwt_secret).
+_INSECURE_JWT_DEFAULT = "change-me-in-production"
 
 
 class Settings(BaseSettings):
@@ -25,11 +31,34 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql://pawrag_user:pawrag_password@localhost:5432/permission_aware_rag"
     )
-    
+
     # JWT (used in Stage 4)
-    jwt_secret_key: str = "change-me-in-production"
+    # The default is an obvious placeholder. It is allowed only in development;
+    # any other environment must set JWT_SECRET_KEY to a 32+ byte random value
+    # (e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`).
+    jwt_secret_key: str = _INSECURE_JWT_DEFAULT
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
+
+    @model_validator(mode="after")
+    def _validate_jwt_secret(self) -> "Settings":
+        """Refuse to start outside development with a weak or default JWT key."""
+        is_dev = self.environment.lower() in {"development", "dev", "local", "test"}
+        if is_dev:
+            return self
+
+        if self.jwt_secret_key == _INSECURE_JWT_DEFAULT:
+            raise ValueError(
+                "JWT_SECRET_KEY is still the insecure default. Set a strong "
+                "random value in non-development environments "
+                '(e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`).'
+            )
+        if len(self.jwt_secret_key.encode("utf-8")) < 32:
+            raise ValueError(
+                "JWT_SECRET_KEY must be at least 32 bytes in non-development "
+                "environments (HS256 recommendation)."
+            )
+        return self
 
 
 settings = Settings()
