@@ -12,7 +12,6 @@ from permission_aware_rag.permission.rules import (
     incident_rule,
     parties_rule,
     project_rule,
-    rbac_default,  # noqa: F401  -- dead code, removed in Step 7
     self_access_rule,
     sensitivity_rule,
 )
@@ -26,11 +25,6 @@ Rule = Callable[[Principal, dict], Optional[PolicyDecision]]
 # Rule registry — evaluated in order. Earlier rules take precedence.
 # Order matters: audit_rule first (auditor override), conditional rules in
 # the middle (self/project/parties/incident), sensitivity_rule last as catch-all.
-#
-# M4.0 migration (2026-05-20): rbac_default replaced by sensitivity_rule.
-# The legacy rbac_default function and LEGACY_ROLE_DEFAULTS matrix remain
-# in rules.py as dead code until Step 7 cleanup, to keep rollback to a
-# one-line change in this file.
 RULES: list[Rule] = [
     audit_rule,             # 4.2.4 - highest priority: auditor with engagement_id
     self_access_rule,       # 4.2.2 - self-grant for hr.personnel / finance.expense
