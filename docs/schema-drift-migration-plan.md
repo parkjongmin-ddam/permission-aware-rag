@@ -1,8 +1,9 @@
 # Schema Migration: Sensitivity-Based RBAC
 
-**Status**: Deferred to M4+
+**Status**: Ready for execution (M4.0)
 **Discovered**: 2026-05-20, M3.3 RAGAS evaluation
-**Owner**: TBD
+**Plan revised**: 2026-05-20 (added stepwise commit ordering, eval success/abort criteria, disclosure_level fix, hardening items separated as M4.0.5)
+**Owner**: parkjongmin-ddam
 
 ## Context
 
@@ -21,16 +22,18 @@ This is a textbook IAM antipattern — *policy vocabulary drift* — where acces
 
 ## Decision
 
-**For M3 (current milestone)**: do not patch the matrix in-place.
+**For M3 (completed)**: did not patch the matrix in-place.
 
 Rationale:
 - The drift is real and the eval correctly surfaces it. Patching by ad-hoc mapping (`marketing.public → marketing.research`) would conceal the drift without resolving the underlying tension.
 - The fix is a non-trivial schema change with data implications. Outside M3 scope.
 - The discovery is itself a portfolio artifact demonstrating self-validating systems.
 
-**For M4+ (production path)**: introduce a `sensitivity` field on documents, orthogonal to `sub_type`. Rewrite the RBAC matrix as `role → allowed sensitivities`. This expresses the original design intent correctly.
+**For M4.0 (this migration)**: introduce a `sensitivity` field on documents, orthogonal to `sub_type`. Rewrite the RBAC matrix as `role → allowed sensitivities`. This expresses the original design intent correctly.
 
 ## Target Schema
+
+`sensitivity` is conceptually orthogonal to `sub_type`. In the current 45-doc dataset the mapping is deterministic (every `hr.policy` is `public`, every `legal.litigation` is `privileged`), but the two fields are kept separate so future cases can diverge — e.g., a normally-`internal` `tech.architecture` doc could be elevated to `restricted` for one specific design that touches unreleased acquisitions.
 
 ### Document additions
 
@@ -72,7 +75,7 @@ Definitions:
 | `legal.contract` | restricted | handled by `parties_rule` |
 | `legal.regulatory` | internal | compliance reference for all relevant roles |
 | `legal.opinion` | restricted | legal advisory |
-| `legal.litigation` | privileged | attorney-client privilege default |
+| `legal.litigation` | privileged | attorney-client privilege default — also requires `disclosure_level: privileged` marker (see Step 1) |
 
 ### Matrix rewrite
 
@@ -120,30 +123,58 @@ def sensitivity_rule(
 
 ## Migration Steps
 
-1. **Add sensitivity to data** (~15min)
-   `data/documents.yaml`: add `sensitivity:` field to each of 45 docs per the mapping table.
+**Ordering principle**: code lands first in a dormant state, data lands second, the switch is flipped last. This ensures the system is never observed in a half-migrated state where data uses the new vocabulary but rules still reference the old.
 
-2. **Update DB schema** (~10min)
+1. **Add `sensitivity_rule` to code (dormant)** (~10min)
+   - Add `sensitivity_rule` function to `permission/rules.py` per the spec above.
+   - Add the new sensitivity-keyed `ROLE_DEFAULTS` matrix alongside the old one (rename old to `LEGACY_ROLE_DEFAULTS` for the duration of migration).
+   - **Do NOT modify `permission/policy.py:RULES`** yet — the new rule exists but is not wired in. System behavior is identical to pre-migration.
+   - Commit: `feat(rules): add sensitivity_rule (dormant, not yet wired)`
+
+2. **Add sensitivity to data** (~15min)
+   - `data/documents.yaml`: add `sensitivity:` field to each of 45 docs per the mapping table.
+   - For DOC-044 and DOC-045 (the two `legal.litigation` documents), also add `disclosure_level: privileged`. This was an audit_rule design gap discovered in M3 — the rule checks for this marker but the data lacked it.
+   - Commit: `data: add sensitivity field + privileged disclosure markers`
+
+3. **Update DB schema and re-ingest** (~10min)
 ```sql
-   ALTER TABLE documents ADD COLUMN sensitivity TEXT;
+ALTER TABLE documents ADD COLUMN sensitivity TEXT;
 ```
    Backfill via re-ingest: `uv run python scripts/ingest.py`
+   - Verify with: `SELECT sub_type, sensitivity, COUNT(*) FROM documents GROUP BY 1,2 ORDER BY 1;`
+   - All 45 rows should have non-null sensitivity.
+   - Commit: `db: add sensitivity column (re-ingest backfill)`
 
-3. **Replace `rbac_default` with `sensitivity_rule`** (~15min)
-   - Add `sensitivity_rule` to `permission/rules.py`
-   - Update `permission/policy.py:RULES` list to use new rule
-   - Update `ROLE_DEFAULTS` to sensitivity-keyed frozensets
-   - Delete obsolete sub_type entries
+4. **Pre-flight: predict eval impact** (~10min)
+   Before flipping the switch, write down the expected eval delta in a scratch note:
+   - TC-013, TC-014, TC-016, TC-017 (current Truth=0 cases): predict whether each gains non-empty Truth after migration. Reasoning per case.
+   - TC-005 sec_001 × DOC-013 (current recall loss): predict whether new matrix keeps or changes this case's outcome.
+   - TC-009 × aud_001 × DOC-044 (privileged litigation): with `disclosure_level: privileged` now present, audit_rule should explicitly DENY. Predict eval will reflect this.
+   - This prediction is a self-check that the change is understood before it's applied. No code edits in this step.
 
-4. **Validate with eval** (~10min)
+5. **Flip the switch** (~5min)
+   - `permission/policy.py:RULES`: replace `rbac_default` with `sensitivity_rule`.
+   - Delete `LEGACY_ROLE_DEFAULTS` (no longer referenced).
+   - Commit: `feat(policy): switch rbac_default → sensitivity_rule`
+
+6. **Validate with eval** (~10min)
    - `uv run python scripts/eval_retrieval.py`
-   - Compare against M3.3 baseline: F1 0.464 → 0.560
-   - Expected outcome: fewer `Truth=0` cases, F1 stable or improved
+   - Compare against M3.3 baseline and against the Step 4 predictions.
+   - **Success criteria**:
+     - Truth=0 cases: reduce from 4 to ≤2 (i.e., TC-013, 014, 016, 017 mostly resolve)
+     - F1: stable or improved vs M3.3 baseline (0.560)
+     - Eligible cases: increase from 28 (out of 52) toward 32+
+   - **Abort criteria**:
+     - F1 drops below 0.50 → migration is making the system worse; halt and review the mapping table
+     - Step 4 predictions diverge from actual results in unexpected ways → investigate before continuing
+   - Document both pre- and post-migration eval results in commit message.
 
-5. **Update test dataset if needed** (~10min)
-   - Any case whose Truth set depended on the old matrix may need relabeling
+7. **Update test dataset if needed** (~10min)
+   - Re-label any case whose Truth set depended on the old matrix.
+   - Most cases should not require changes since Truth is computed via `can_read()` from the live policy.
+   - Commit (if any changes): `eval: relabel cases affected by sensitivity migration`
 
-**Total estimated effort**: ~60 minutes engineering + ~30 minutes review.
+**Total estimated effort**: ~70 minutes engineering + ~20 minutes review.
 
 ## Risks
 
@@ -165,6 +196,13 @@ Revert `permission/policy.py:RULES` to include `rbac_default`. The sensitivity c
 - Sensitivity inheritance from parent documents.
 
 These are valid future considerations but require deeper schema work and are not part of this migration.
+
+### Adjacent work tracked separately
+
+Two M3-era hardening items are intentionally NOT bundled into this migration to keep the commit history clean:
+
+- **JWT_SECRET_KEY length** — currently 23 bytes, triggers `InsecureKeyLengthWarning`. Replace with 32+ byte random value. Tracked as M4.0.5 (pre-deployment hardening), should be done via Secrets Manager during M4.1 deployment work, not here.
+- **Pydantic `extra="forbid"` strict mode** — silent kwarg drops (e.g., `reranker_score` vs `rerank_score`) caused real debugging time in M3. Add `model_config = ConfigDict(extra="forbid")` to all Pydantic models. Tracked as M4.0.5, separate commit from the schema migration.
 
 ## References
 
