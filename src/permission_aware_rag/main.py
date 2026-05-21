@@ -25,8 +25,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Permission-aware RAG",
     description=(
-        "A LangGraph-based RAG system with multi-dimensional permission filtering "
-        "(RBAC + ReBAC + ABAC)."
+        "A permission-aware RAG system with multi-dimensional access control "
+        "(RBAC + ReBAC + ABAC). Permission filtering sits between retrieval and generation."
     ),
     version="0.1.0",
     lifespan=lifespan,
