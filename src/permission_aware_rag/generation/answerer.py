@@ -76,6 +76,21 @@ async def generate_answer(query: str, allowed_docs: list[ScoredDocument]) -> Ans
         f"---\n\nQuestion: {query}"
     )
 
+    # --- LLM backend (single swap point) ---
+    # Cloud demo uses the Claude API (claude-sonnet-4-6).
+    #
+    # DESIGN INTENT - air-gapped / API-restricted deployment:
+    # This project primarily targets enterprise environments where outbound LLM
+    # API calls or data exfiltration are controlled (network isolation, DLP,
+    # API-key governance). This is the ONE place that changes for such a
+    # deployment: replace ChatAnthropic with an on-prem backend - e.g. Ollama
+    # serving a local model (Qwen2.5 / Llama 3.1) via langchain-ollama's
+    # ChatOllama. Everything else (retrieval, the 6-rule permission filter,
+    # citation extraction) is unchanged.
+    #
+    # Why this matters: the permission filter runs BEFORE this call, so no
+    # document outside the principal's permission ever reaches ANY LLM - cloud
+    # or local. The permission boundary doubles as a data-egress control point.
     llm = ChatAnthropic(
         model=settings.answer_model,
         api_key=settings.anthropic_api_key,

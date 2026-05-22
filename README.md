@@ -31,6 +31,8 @@ short_description: Permission-aware retrieval (RBAC + ReBAC + ABAC)
 
 권한 필터가 LLM **앞**에 있으므로, 사용자가 읽을 수 없는 문서는 애초에 생성 모델의 컨텍스트에 들어가지 않는다. 따라서 권한 없는 정보가 답변으로 누출되는 일이 구조적으로 불가능하다.
 
+이 설계는 특히 **외부 LLM API 호출과 데이터 반출이 통제되는 환경**(망분리, DLP, API 키 거버넌스)을 염두에 둔 것이다. 그런 환경에서 RAG 도입의 가장 큰 우려는 *"사내 문서를 LLM에 물렸을 때 권한 없는 사람에게 기밀이 새지 않는가"*이다. 권한 필터를 생성 앞에 두면, 권한 경계가 곧 데이터 반출 통제 지점이 된다 — 권한 범위를 벗어난 문서는 외부 API든 온프레미스 모델이든 어떤 LLM에도 전달되지 않는다.
+
 > **시나리오**: 가상 회사 "BWCorp"의 45개 문서(HR, 보안, 법무, 재무, 기술 등)를 사용한다. IdP는 FastAPI 기반 mock JWT issuer로 시뮬레이션한다. 실제 IdP 통합(Keycloak 등)이나 ADFS/AD 인프라 구축은, RAG 권한 모델이라는 본질을 흐린다고 판단해 의도적으로 범위에서 제외했다.
 
 ---
@@ -146,6 +148,21 @@ git push origin main
 - DB(`documents` + `audit_log`)는 Supabase에 분리. 컴퓨트(모델·정책 엔진)와 상태(문서·임베딩)를 분리한 구성.
 - 비밀값(DB URL, JWT 키, Anthropic API 키)은 HF Space Secrets로 주입. 이미지·저장소에 포함하지 않는다.
 - `ENVIRONMENT=production`이면 약한 JWT 키로는 기동을 거부한다(config validator).
+
+### 배포 모드 — 클라우드 데모 vs 폐쇄망/API 통제 환경
+
+이 프로젝트의 1차 대상은 **외부 LLM API 호출이나 데이터 반출이 통제되는 엔터프라이즈 환경**이다(망분리, DLP, API 키 거버넌스). 클라우드 데모는 동작 시연용이고, 폐쇄망 배포로 바꾸는 지점은 명확히 분리돼 있다.
+
+| | 클라우드 데모 (현재) | 폐쇄망 / API 통제 환경 |
+|---|---|---|
+| LLM | Claude API (`claude-sonnet-4-6`) | 온프레미스 (Ollama + Qwen2.5 / Llama 3.1) |
+| 호스팅 | Hugging Face Spaces | 온프레미스 Docker |
+| Vector DB | Supabase (managed) | 온프레미스 Postgres + pgvector |
+| 모델 캐시 | HF 다운로드 | 사내 미러 / 오프라인 번들 |
+
+LLM 백엔드 교체는 **단일 지점**(`generation/answerer.py`)에서 이뤄진다. `ChatAnthropic`을 `ChatOllama`로 바꾸면, 나머지 파이프라인(검색, 6-rule 권한 필터, citation)은 그대로다.
+
+핵심은 **권한 필터가 생성(LLM) 앞에 있다**는 점이다. 권한 범위를 벗어난 문서는 외부 API든 온프레미스 모델이든 어떤 LLM에도 전달되지 않는다. 즉 권한 경계가 곧 **데이터 반출 통제 지점**이 된다 — API 통제 환경에서 RAG를 도입할 때 가장 우려되는 부분을 구조로 막는다.
 
 ---
 

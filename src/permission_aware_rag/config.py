@@ -45,9 +45,14 @@ class Settings(BaseSettings):
     jwt_secret_key: str = _INSECURE_JWT_DEFAULT
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
-    
+
     # Answer generation (M4.2). ANTHROPIC_API_KEY required only for /answer.
     anthropic_api_key: str | None = None
+
+    # LLM backend. Currently Claude API (cloud demo). Air-gapped or
+    # API-restricted deployments swap this for an on-prem model (e.g. Ollama
+    # ChatOllama serving Qwen2.5 / Llama 3.1). See generation/answerer.py for
+    # the single swap point.
     answer_model: str = "claude-sonnet-4-6"
     answer_max_tokens: int = 1024
 
