@@ -3,6 +3,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from permission_aware_rag.api.routes import answer, auth, health, query
 from permission_aware_rag.config import settings
@@ -30,6 +31,26 @@ app = FastAPI(
     ),
     version="0.1.0",
     lifespan=lifespan,
+)
+
+# CORS — allow the static demo UI (demo/chat.html) to call the API from a
+# browser. In development we allow any origin for convenience (local file://
+# or a local static server). In other environments, origins are restricted to
+# an explicit allow-list from settings (cors_allow_origins), so a deployed API
+# only accepts the demo origins you opt in to — consistent with the
+# API-restricted posture of the rest of the project.
+_is_dev = settings.environment.lower() in {"development", "dev", "local", "test"}
+if _is_dev:
+    _allow_origins = ["*"]
+else:
+    _allow_origins = settings.cors_allow_origins
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allow_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 app.include_router(health.router)

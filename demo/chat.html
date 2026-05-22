@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>permission-aware-rag · demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e14;
+    --panel: #11161f;
+    --panel-2: #161c28;
+    --border: #232c3d;
+    --border-bright: #2f3b52;
+    --text: #d4dae6;
+    --text-dim: #7b8699;
+    --text-faint: #4d5667;
+    --accent: #5ac8fa;          /* allow / cyan */
+    --accent-dim: #2a6f8a;
+    --deny: #ff6b6b;            /* deny / red */
+    --warn: #ffb454;           /* privilege / amber */
+    --ok: #7ee787;             /* allowed green */
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(90,200,250,0.05), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(255,180,84,0.04), transparent 40%);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 32px 20px;
+    line-height: 1.5;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  /* Header */
+  header {
+    border: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    background: var(--panel);
+    padding: 20px 24px;
+    border-bottom: none;
+  }
+  .title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); flex-shrink: 0; }
+  h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; font-family: var(--mono); }
+  h1 .pa { color: var(--accent); }
+  .sub { color: var(--text-dim); font-size: 13px; margin-top: 6px; font-family: var(--mono); }
+
+  .endpoint-row {
+    margin-top: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .endpoint-row label { font-size: 11px; color: var(--text-faint); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; }
+  #apiBase {
+    flex: 1; min-width: 240px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text-dim); font-family: var(--mono); font-size: 12px;
+    padding: 7px 10px; border-radius: 6px;
+  }
+  #apiBase:focus { outline: none; border-color: var(--accent-dim); color: var(--text); }
+
+  /* Controls */
+  .controls {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    background: var(--panel-2);
+    padding: 18px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .persona-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .persona-bar .lbl { font-size: 11px; color: var(--text-faint); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; }
+  .persona-btn {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text-dim); font-family: var(--mono); font-size: 12.5px;
+    padding: 7px 13px; border-radius: 999px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .persona-btn:hover { border-color: var(--border-bright); color: var(--text); }
+  .persona-btn.active {
+    background: rgba(90,200,250,0.12); border-color: var(--accent);
+    color: var(--accent); font-weight: 500;
+  }
+  .persona-meta {
+    font-family: var(--mono); font-size: 11.5px; color: var(--text-faint);
+    padding: 2px 0;
+  }
+  .persona-meta b { color: var(--text-dim); font-weight: 500; }
+
+  .q-suggest { display: flex; gap: 8px; flex-wrap: wrap; }
+  .q-chip {
+    background: transparent; border: 1px dashed var(--border-bright);
+    color: var(--text-dim); font-family: var(--sans); font-size: 12.5px;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .q-chip:hover { border-style: solid; border-color: var(--accent-dim); color: var(--text); }
+
+  .input-row { display: flex; gap: 8px; }
+  #query {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--sans); font-size: 14px;
+    padding: 11px 14px; border-radius: 8px;
+  }
+  #query:focus { outline: none; border-color: var(--accent-dim); }
+  #askBtn {
+    background: var(--accent); color: #04141d; border: none;
+    font-family: var(--mono); font-weight: 600; font-size: 13px;
+    padding: 0 22px; border-radius: 8px; cursor: pointer;
+    transition: all 0.15s ease; white-space: nowrap;
+  }
+  #askBtn:hover { background: #7ad3fb; }
+  #askBtn:disabled { background: var(--border); color: var(--text-faint); cursor: not-allowed; }
+
+  /* Conversation */
+  .convo {
+    border: 1px solid var(--border);
+    border-radius: 0 0 12px 12px;
+    background: var(--panel);
+    padding: 8px;
+    min-height: 200px;
+    max-height: 560px;
+    overflow-y: auto;
+  }
+  .convo::-webkit-scrollbar { width: 8px; }
+  .convo::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .empty {
+    color: var(--text-faint); font-family: var(--mono); font-size: 13px;
+    text-align: center; padding: 60px 20px;
+  }
+
+  .msg { padding: 14px 16px; border-radius: 8px; margin: 8px; }
+  .msg.user {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+  }
+  .msg.user .who { color: var(--accent); }
+  .msg-head {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 12px; margin-bottom: 8px;
+  }
+  .who { font-weight: 600; }
+  .who-role { color: var(--text-faint); }
+  .perm-badges { display: flex; gap: 6px; margin-left: auto; }
+  .badge {
+    font-family: var(--mono); font-size: 11px; padding: 2px 8px;
+    border-radius: 4px; font-weight: 500;
+  }
+  .badge.allow { background: rgba(126,231,135,0.12); color: var(--ok); border: 1px solid rgba(126,231,135,0.25); }
+  .badge.deny { background: rgba(255,107,107,0.1); color: var(--deny); border: 1px solid rgba(255,107,107,0.22); }
+  .badge.refused { background: rgba(255,180,84,0.12); color: var(--warn); border: 1px solid rgba(255,180,84,0.25); }
+
+  .msg.assistant { background: transparent; }
+  .answer-body {
+    font-size: 14px; color: var(--text); white-space: pre-wrap; word-break: break-word;
+  }
+  .answer-body h1, .answer-body h2, .answer-body h3 { font-size: 14.5px; margin: 12px 0 4px; color: var(--text); }
+
+  .cites {
+    margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+    display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  }
+  .cites .lbl { font-family: var(--mono); font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }
+  .cite {
+    font-family: var(--mono); font-size: 11.5px; padding: 2px 8px;
+    background: rgba(90,200,250,0.08); color: var(--accent);
+    border: 1px solid var(--accent-dim); border-radius: 4px;
+  }
+  .cite.none { background: transparent; color: var(--text-faint); border-color: var(--border); }
+
+  .loading { display: flex; align-items: center; gap: 10px; color: var(--text-dim); font-family: var(--mono); font-size: 13px; }
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .err { color: var(--deny); font-family: var(--mono); font-size: 12.5px; padding: 4px 0; }
+
+  footer {
+    text-align: center; margin-top: 18px; color: var(--text-faint);
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.8;
+  }
+  footer a { color: var(--accent-dim); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title-row">
+      <span class="dot"></span>
+      <h1><span class="pa">permission-aware</span>-rag · demo</h1>
+    </div>
+    <div class="sub">같은 질문, 다른 사람 → 권한 범위 안에서만 답한다</div>
+    <div class="endpoint-row">
+      <label>API</label>
+      <input id="apiBase" value="https://parkjongmin-ddam-permission-aware-rag.hf.space" spellcheck="false">
+    </div>
+  </header>
+
+  <div class="controls">
+    <div>
+      <div class="persona-bar" id="personaBar">
+        <span class="lbl">as</span>
+        <!-- persona buttons injected -->
+      </div>
+      <div class="persona-meta" id="personaMeta"></div>
+    </div>
+
+    <div class="q-suggest" id="qSuggest"><!-- suggestion chips injected --></div>
+
+    <div class="input-row">
+      <input id="query" placeholder="질문을 입력하거나 위 추천 질문을 클릭…" value="ExternalCo 소송 분쟁">
+      <button id="askBtn">ASK →</button>
+    </div>
+  </div>
+
+  <div class="convo" id="convo">
+    <div class="empty">사용자를 고르고 질문을 던지세요.<br>같은 질문이라도 권한에 따라 답이 달라집니다.</div>
+  </div>
+
+  <footer>
+    BWCorp (가상 데이터) · LLM은 권한 통과 문서만 본다 — 차단된 문서는 답변에 섞이지 않는다<br>
+    <a href="https://github.com/parkjongmin-ddam/permission-aware-rag" target="_blank">github.com/parkjongmin-ddam/permission-aware-rag</a>
+  </footer>
+
+</div>
+
+<script>
+  const PERSONAS = [
+    { id: 'user_emp_001',  label: '일반직원',   role: 'employee',         note: '권한 바닥 — 공개/소속 범위 문서만' },
+    { id: 'user_aud_001',  label: '감사인',     role: 'auditor',          note: '감사 범위 넓음, 단 privileged(소송)는 차단' },
+    { id: 'user_exec_001', label: '임원',       role: 'executive',        note: '소송 당사자 → privileged 문서까지 열람' },
+    { id: 'user_sec_001',  label: '보안담당',   role: 'security_officer', note: '보안 인시던트 횡단 접근(ReBAC)' },
+    { id: 'user_ext_001',  label: '외부컨설턴트', role: 'external',         note: '계약 프로젝트 범위 내(ABAC)' },
+    { id: 'user_hrs_001',  label: 'HR',         role: 'hr_specialist',    note: '인사 문서 접근' },
+  ];
+
+  const SUGGESTIONS = [
+    'ExternalCo 소송 분쟁',
+    '보안 인시던트 데이터 유출',
+    '직원 인사평가',
+    'Q3 재무 예산',
+  ];
+
+  let currentPersona = PERSONAS[0];
+  let busy = false;
+
+  const $ = (s) => document.querySelector(s);
+  const convo = $('#convo');
+
+  // Build persona buttons
+  const bar = $('#personaBar');
+  PERSONAS.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'persona-btn' + (i === 0 ? ' active' : '');
+    b.textContent = p.label;
+    b.onclick = () => {
+      currentPersona = p;
+      document.querySelectorAll('.persona-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      updateMeta();
+    };
+    bar.appendChild(b);
+  });
+  function updateMeta() {
+    $('#personaMeta').innerHTML = `<b>${currentPersona.id}</b> · role=${currentPersona.role} — ${currentPersona.note}`;
+  }
+  updateMeta();
+
+  // Build suggestion chips
+  const sug = $('#qSuggest');
+  SUGGESTIONS.forEach(q => {
+    const c = document.createElement('button');
+    c.className = 'q-chip';
+    c.textContent = q;
+    c.onclick = () => { $('#query').value = q; ask(); };
+    sug.appendChild(c);
+  });
+
+  // very small markdown-ish cleanup for display (bold only)
+  function fmt(text) {
+    const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return esc.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  }
+
+  function scrollDown() { convo.scrollTop = convo.scrollHeight; }
+
+  async function ask() {
+    if (busy) return;
+    const query = $('#query').value.trim();
+    if (!query) return;
+    const base = $('#apiBase').value.trim().replace(/\/$/, '');
+    const persona = currentPersona;
+
+    busy = true; $('#askBtn').disabled = true;
+    if (convo.querySelector('.empty')) convo.innerHTML = '';
+
+    // user bubble
+    const u = document.createElement('div');
+    u.className = 'msg user';
+    u.innerHTML = `<div class="msg-head"><span class="who">${persona.label}</span>
+      <span class="who-role">${persona.id} · ${persona.role}</span></div>
+      <div class="answer-body">${fmt(query)}</div>`;
+    convo.appendChild(u);
+
+    // assistant placeholder
+    const a = document.createElement('div');
+    a.className = 'msg assistant';
+    a.innerHTML = `<div class="loading"><span class="spinner"></span>권한 필터 통과 후 생성 중…</div>`;
+    convo.appendChild(a);
+    scrollDown();
+
+    try {
+      const login = await fetch(base + '/auth/mock-login', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: persona.id })
+      }).then(r => r.json());
+
+      const res = await fetch(base + '/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + login.access_token },
+        body: JSON.stringify({ query, top_k: 5 })
+      }).then(r => r.json());
+
+      const cites = (res.cited_documents || []).map(d => d.id);
+      const citeHtml = cites.length
+        ? cites.map(id => `<span class="cite">${id}</span>`).join('')
+        : `<span class="cite none">인용 없음</span>`;
+
+      const refusedBadge = res.refused
+        ? `<span class="badge refused">REFUSED</span>` : '';
+
+      a.innerHTML = `
+        <div class="msg-head">
+          <span class="who" style="color:var(--text-dim)">assistant</span>
+          <div class="perm-badges">
+            ${refusedBadge}
+            <span class="badge allow">allowed ${res.total_allowed}</span>
+            <span class="badge deny">denied ${res.total_denied}</span>
+          </div>
+        </div>
+        <div class="answer-body">${fmt(res.answer || '(빈 응답)')}</div>
+        <div class="cites"><span class="lbl">cited</span>${citeHtml}</div>`;
+      scrollDown();
+    } catch (e) {
+      a.innerHTML = `<div class="err">요청 실패: ${e.message}<br>API 주소 / Space 상태(Private면 로그인)를 확인하세요.</div>`;
+    } finally {
+      busy = false; $('#askBtn').disabled = false;
+    }
+  }
+
+  $('#askBtn').onclick = ask;
+  $('#query').addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+</script>
+</body>
+</html>

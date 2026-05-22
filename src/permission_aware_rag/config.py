@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     answer_model: str = "claude-sonnet-4-6"
     answer_max_tokens: int = 1024
 
+    # CORS allow-list for non-development environments. The demo UI
+    # (demo/chat.html) needs the deployed API to accept its browser origin.
+    # Development allows any origin (main.py); here you opt in to specific
+    # origins explicitly (comma-separated in env: CORS_ALLOW_ORIGINS).
+    cors_allow_origins: list[str] = []
+
     @model_validator(mode="after")
     def _validate_jwt_secret(self) -> "Settings":
         """Refuse to start outside development with a weak or default JWT key."""
