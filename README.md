@@ -1,218 +1,317 @@
-﻿---
-title: Permission Aware RAG
-colorFrom: indigo
-colorTo: blue
-sdk: docker
-app_port: 7860
-pinned: false
-short_description: Permission-aware retrieval (RBAC + ReBAC + ABAC)
----
+﻿# permission-aware-rag
 
-# permission-aware-rag
+**Permission-aware Retrieval-Augmented Generation for enterprise / air-gapped environments — access control is enforced at the *retrieval* stage, before any document ever reaches the LLM.**
 
-> 사용자의 신원·역할·관계에 따라 **검색 결과와 생성 답변이 동적으로 달라지는** 엔터프라이즈 RAG.
-> 같은 질문이라도 권한이 없는 문서는 검색에서 걸러지고, 생성 모델에도 전달되지 않는다.
+> 권한 인식 RAG. 문서가 LLM에 도달하기 *이전*, 검색(retrieval) 단계에서 접근 제어를 강제합니다. 사내·망분리(air-gapped) 환경을 염두에 두고 설계했습니다.
 
-![Status](https://img.shields.io/badge/status-M4%20complete-green)
 ![Python](https://img.shields.io/badge/python-3.13-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.13x-009688)
+![pgvector](https://img.shields.io/badge/pgvector-HNSW-336791)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
-## 왜 이 프로젝트인가
+## Why permission-aware? / 왜 권한 인식 RAG인가
 
-엔터프라이즈 인증 인프라(ADFS, SAML, OIDC)를 다년간 운영하며 관찰한 공백 — 대부분의 RAG 레퍼런스 구현은 *"누구나 모든 문서를 검색할 수 있다"*는 가정 위에서 동작한다. 실제 기업 환경에서는 사용자의 역할(role)·속성(attribute)·관계(relationship)에 따라 접근 가능한 문서가 달라야 하고, 이 차이가 검색 결과·생성 답변·감사 로그에 모두 일관되게 반영되어야 한다.
+A normal RAG system retrieves the most *similar* chunks and feeds them to the LLM. In an enterprise that means an employee can surface a document they should never see — the model will happily summarize a confidential litigation memo if it is semantically relevant to the question.
 
-이 프로젝트는 IAM 권한 모델(RBAC·ReBAC·ABAC)을 RAG 파이프라인에 통합해, **권한 필터링을 검색과 생성의 가운데에 배치**한다. 핵심 불변식은 단순하다:
+> 일반 RAG는 *유사도*가 높은 청크를 그대로 LLM에 넣습니다. 사내 환경에서는 직원이 봐서는 안 될 문서가 검색되어 그대로 요약될 수 있습니다. "내용이 질문과 관련 있으니까" 기밀 소송 메모도 그대로 답변에 섞입니다.
+
+This project moves access control **left** — the permission decision happens during retrieval, so denied documents are never passed to the model and never appear in the answer or its citations.
+
+> 이 프로젝트는 접근 제어를 **앞단으로** 옮깁니다. 권한 판단을 검색 단계에서 수행하므로, 거부된 문서는 애초에 모델로 전달되지 않고 답변·인용에도 등장하지 않습니다.
+
+Two layers work together:
+
+> 두 개의 레이어가 함께 동작합니다:
+
+- **ReBAC (Relationship-Based Access Control)** — can this user see this document *because of their relationship to it* (project member, named party, incident stakeholder, the subject themselves)?
+- **Privilege / sensitivity gating** — even a high-clearance role (e.g. an auditor) can be blocked from specific privileged documents.
+
+> - **ReBAC(관계 기반 접근 제어)** — 사용자가 문서와 *맺은 관계*(프로젝트 멤버, 명시된 당사자, 인시던트 이해관계자, 본인) 때문에 볼 수 있는가?
+> - **권한/민감도 게이팅** — 높은 권한(예: 감사인)이라도 특정 특권 문서는 차단될 수 있습니다.
+
+---
+
+## Architecture / 아키텍처
+
+This is an **explicit function pipeline**, not a graph/agent framework. The flow is deterministic and easy to debug, trace, and audit — which is exactly what an access-control system should be.
+
+> 그래프/에이전트 프레임워크가 아니라 **명시적 함수 파이프라인**입니다. 흐름이 결정적(deterministic)이라 디버깅·추적·감사가 쉽습니다. 접근 제어 시스템에 요구되는 성질입니다.
 
 ```
-검색 → 재순위 → 권한 필터(can_read) → 통과한 문서만 → LLM 생성
+                ┌─────────────┐
+   query  ──▶   │  retrieval  │  BGE-M3 embedding → pgvector (HNSW) top-k
+                └──────┬──────┘
+                       ▼
+                ┌─────────────┐
+                │  permission │  6 rules → allowed_doc_ids / denied_doc_ids
+                │   filter    │  (ReBAC + sensitivity)
+                └──────┬──────┘
+                       ▼
+                ┌─────────────┐
+                │  reranking  │  BGE Reranker v2-m3 on the *allowed* set
+                └──────┬──────┘
+                       ▼
+                ┌─────────────┐
+                │ generation  │  Claude (ChatAnthropic) — swappable with Ollama
+                └──────┬──────┘
+                       ▼
+              answer + cited docs + audit log
 ```
 
-권한 필터가 LLM **앞**에 있으므로, 사용자가 읽을 수 없는 문서는 애초에 생성 모델의 컨텍스트에 들어가지 않는다. 따라서 권한 없는 정보가 답변으로 누출되는 일이 구조적으로 불가능하다.
+**Retrieval → Permission → Rerank → Generation.** Denied documents are dropped *before* reranking and generation. Every request is written to an audit log with the allowed/denied document IDs.
 
-이 설계는 특히 **외부 LLM API 호출과 데이터 반출이 통제되는 환경**(망분리, DLP, API 키 거버넌스)을 염두에 둔 것이다. 그런 환경에서 RAG 도입의 가장 큰 우려는 *"사내 문서를 LLM에 물렸을 때 권한 없는 사람에게 기밀이 새지 않는가"*이다. 권한 필터를 생성 앞에 두면, 권한 경계가 곧 데이터 반출 통제 지점이 된다 — 권한 범위를 벗어난 문서는 외부 API든 온프레미스 모델이든 어떤 LLM에도 전달되지 않는다.
-
-> **시나리오**: 가상 회사 "BWCorp"의 45개 문서(HR, 보안, 법무, 재무, 기술 등)를 사용한다. IdP는 FastAPI 기반 mock JWT issuer로 시뮬레이션한다. 실제 IdP 통합(Keycloak 등)이나 ADFS/AD 인프라 구축은, RAG 권한 모델이라는 본질을 흐린다고 판단해 의도적으로 범위에서 제외했다.
+> **검색 → 권한 → 리랭킹 → 생성.** 거부 문서는 리랭킹·생성 *이전*에 제거됩니다. 모든 요청은 allowed/denied 문서 ID와 함께 감사 로그에 기록됩니다.
 
 ---
 
-## 핵심 데모 — 같은 질문, 세 사람, 세 결과
+## The 6 permission rules / 6개 정책 룰
 
-질의 **"ExternalCo dispute litigation"** 를 권한이 다른 세 사용자가 던졌을 때 (`POST /query` · `POST /answer`, 클라우드 라이브):
+Rules are evaluated in order (defined in `permission/policy.py`). The first rule that grants access wins; otherwise the document is denied.
 
-| | 일반직원 (`emp_001`) | 외부 감사인 (`aud_001`) | 임원 (`exec_001`) |
-|---|---|---|---|
-| allowed / denied | **2 / 13** | 13 / 2 | 9 / 6 |
-| `DOC-044` (소송, *privileged*) | ❌ | ❌ | ✅ |
-| `/answer` 인용 문서 | `DOC-022` | `DOC-040`, `DOC-012` | `DOC-044`, `DOC-040`, `DOC-012` |
-| 생성된 답변 | "권한 내 문서에 소송 정보 없음 — 있다면 권한 밖" | 계약 조항·보안 인시던트 (소송 금액 없음) | 소송 금액 1.2억·위험 평가·합의 전략 |
+> 룰은 정해진 순서(`permission/policy.py`)로 평가됩니다. 접근을 허용하는 첫 룰이 적용되며, 없으면 거부됩니다.
 
-![3인 권한 비교 — 같은 질의, 다른 결과](docs/images/three-persona-demo.png)
-
-같은 질문이지만 결과가 권한에 따라 단계적으로 갈린다.
-
-- **일반직원**: 15개 후보 중 13개가 차단된다. ExternalCo 관련 공개 계약 문서(`DOC-022`)는 보지만 소송 문서는 없다. LLM은 가진 문서만 보고 *"소송 정보는 없으며, 있다면 접근 권한 밖일 것"* 이라고 정직하게 답한다.
-- **감사인**: 감사 범위(`audit_engagement_id`) 덕에 오히려 더 많이 본다(allowed 13). 하지만 `DOC-044`만은 *privileged* — attorney-client privilege로 `audit_rule`이 차단한다. 감사라도 소송 특권 문서는 못 본다.
-- **임원**: 본인이 그 소송 당사자라 `parties_rule`로 `DOC-044`를 보고, 답변에 소송 금액·위험·전략까지 포함된다.
-
-핵심은 이것이 단순 권한 레벨(많이 봄/적게 봄)이 아니라는 점이다. 감사인은 일반직원보다 훨씬 많이 보지만(13 vs 2), 정작 소송 문서는 **둘 다 못 본다**. 권한이 *역할*만이 아니라 *관계*(ReBAC)와 *문서 특권*(privilege)으로 결정되기 때문이다. RBAC 단일 차원으로는 나오지 않는 그림이다. 그리고 권한 필터가 LLM **앞**에 있으므로, 차단된 문서의 내용은 생성된 답변에 한 글자도 섞이지 않는다 — LLM이 그 문서를 애초에 보지 못한다.
+| Rule | Grants access when… / 허용 조건 |
+| --- | --- |
+| `self_access_rule` | The user *is* the subject of the document / 사용자가 문서의 당사자 본인 |
+| `project_rule` | The user is a member of the document's project / 문서 프로젝트의 멤버 |
+| `parties_rule` | The user is listed in the document's `parties` / 문서 `parties`에 명시됨 |
+| `incident_rule` | The user is a stakeholder of the incident / 인시던트 이해관계자 |
+| `audit_rule` | The user has an audit role (with sensitivity limits) / 감사 권한(민감도 한도 적용) |
+| `sensitivity_rule` | Default gate by document sensitivity vs. role clearance / 문서 민감도 대비 역할 권한 기본 게이트 |
 
 ---
 
-## 아키텍처
+## The 3-persona demo / 3인 페르소나 데모
+
+The same query, three users — the answer changes because the *visible document set* changes. This is the core of the demo (9 personas total are defined; these three make the contrast clearest).
+
+> 같은 질문, 세 사용자 — *볼 수 있는 문서 집합*이 달라지므로 답변이 달라집니다. 총 9개 페르소나 중 대비가 가장 뚜렷한 3개입니다.
+
+| Persona | Allowed / Denied | DOC-044 (privileged litigation memo) | Resulting answer / 결과 |
+| --- | --- | --- | --- |
+| **`emp_001`** (general employee) | 2 / 13 | denied | "관련 소송 정보 없음" — sees almost nothing |
+| **`aud_001`** (auditor) | 13 / 2 | **denied** | Broad visibility, **but still blocked** from the privileged doc |
+| **`exec_001`** (executive) | 9 / 6 | **cited** | Full litigation details (incl. the case amount) via `parties_rule` |
+
+The key point: the **auditor sees more documents than the employee (13 vs 2)** yet **both are blocked from DOC-044** — demonstrating that ReBAC + privilege gating beats role-based access control alone. "More senior" ≠ "sees everything."
+
+> 핵심: **감사인이 직원보다 더 많은 문서(13 vs 2)를 보지만**, **둘 다 DOC-044는 차단**됩니다. 단순 RBAC만으로는 불가능한, "ReBAC + 권한 게이팅"의 가치를 보여줍니다. "직급이 높다 = 다 본다"가 아닙니다.
+
+---
+
+## Tech stack / 기술 스택
+
+| Layer | Choice |
+| --- | --- |
+| Language / runtime | Python 3.13, managed with **uv** |
+| API | FastAPI + uvicorn |
+| Vector DB | PostgreSQL + **pgvector** (HNSW index, `vector(1024)`) |
+| Embedding | **BGE-M3** (1024-dim, cross-lingual KO/EN) via sentence-transformers |
+| Reranker | **BGE Reranker v2-m3** |
+| LLM (generation) | **Claude** via `langchain-anthropic` — *single swap point* for Ollama |
+| Auth | JWT (PyJWT); mock token issuance per persona |
+| Config | pydantic-settings (`.env`) |
+| Observability (optional) | Langfuse — no-op without keys |
+
+> 임베딩/리랭커는 BGE-M3 / BGE Reranker v2-m3, 벡터 DB는 pgvector(HNSW, 1024차원), 생성은 Claude(`langchain-anthropic`)이며 Ollama로 교체 가능한 단일 지점이 있습니다.
+
+---
+
+## Project structure / 프로젝트 구조
 
 ```
-                   POST /query  (검색만)
-   User ──JWT──▶   POST /answer (검색 + 생성)
-                        │
-                        ▼
-        ┌───────────────────────────────────┐
-        │  1. Auth        JWT 검증 → Principal │
-        │  2. Embed       BGE-M3 쿼리 임베딩    │
-        │  3. Retrieve    pgvector HNSW 후보 30 │
-        │  4. Rerank      BGE Reranker → top 15 │
-        │  5. Permission  can_read() 6-rule 필터 │  ← 권한 경계
-        │  6. Generate    Claude (허용 문서만)   │  (/answer 전용)
-        └───────────────────────────────────┘
-                        │
-                        ▼
-   Audit Log  ◀── 모든 권한 결정(허용/거부) 기록
+permission-aware-rag/
+├── src/permission_aware_rag/   # application package
+│   ├── main.py                 #   FastAPI app, router registration, CORS
+│   ├── config.py               #   pydantic-settings (env vars, deploy mode)
+│   ├── api/routes/             #   health, auth, query, answer
+│   ├── auth/                   #   jwt_utils, dependencies, personas (9)
+│   ├── permission/             #   rules.py (6 rules), policy.py, types.py
+│   ├── retrieval/              #   embedder, reranker, retriever
+│   ├── generation/             #   answerer.py  ← LLM swap point (Claude/Ollama)
+│   ├── observability/          #   tracing.py (Langfuse, optional)
+│   ├── audit/                  #   log.py
+│   └── db/                     #   session.py (Postgres pool)
+├── data/                       # demo document corpus
+├── docker/postgres/            # pgvector init schema / SQL
+├── demo/                       # interactive chat UI (persona buttons + chips)
+├── eval/                       # RAGAS evaluation set + results
+├── scripts/                    # ingest / eval harness / diagnostics
+├── notebooks/                  # learning notebooks (e.g. LangGraph quickstart)
+├── tests/                      # test suite
+├── .github/workflows/          # CI (HF Space deploy workflow — see note below)
+├── docker-compose.yml          # pgvector/pgvector:pg17
+├── Dockerfile                  # python:3.13-slim
+├── pyproject.toml              # hatchling, src layout
+├── uv.lock
+├── .env.example
+└── LICENSE                     # MIT
 ```
 
-**설계 노트 — 왜 LangGraph가 아닌 명시적 파이프라인인가**
-초기 설계에서는 LangGraph 기반 에이전트를 검토했으나, 이 파이프라인은 분기가 거의 없는 선형 흐름이고 권한 결정의 **결정성과 관찰성**이 최우선이었다. 명시적 함수 파이프라인이 디버깅·감사·테스트에서 더 명확하다고 판단해 LangGraph를 채택하지 않았다. (에이전트적 분기가 필요해지면 재검토 대상)
+> The core RAG pipeline is a plain function pipeline — the `notebooks/` LangGraph quickstart is a separate learning artifact, not part of the request path. / 핵심 RAG 파이프라인은 함수 파이프라인입니다. `notebooks/`의 LangGraph 퀵스타트는 별개의 학습용 자료로, 요청 경로와 무관합니다.
 
 ---
 
-## 권한 모델
+## Prerequisites / 사전 요구사항
 
-`can_read(principal, document)` 가 6개 규칙을 **우선순위 순서대로** 평가한다. 첫 번째로 결정을 내리는 규칙이 적용된다.
+- **Docker Desktop** (for the pgvector container) / pgvector 컨테이너용
+- **Python 3.13** + [**uv**](https://github.com/astral-sh/uv) / 의존성 관리
+- **Anthropic API key** — required only for the `/answer` endpoint (generation). `/query` works without it. / `/answer`(생성)에만 필요하며 `/query`는 없이 동작
 
-| 규칙 | 유형 | 설명 |
-|---|---|---|
-| `audit_rule` | ABAC + 특권 | 감사인은 `audit_engagement_id` 범위 내 문서를 읽되, *privileged* 문서(소송 등)는 차단 |
-| `self_access_rule` | ABAC | 본인 인사·비용 기록 등 self-subject 문서 접근 |
-| `project_rule` | ReBAC | 프로젝트 멤버십(`project_members`) 기반 접근 |
-| `parties_rule` | ReBAC | 법무 케이스의 당사자(`parties`) 기반 접근 |
-| `incident_rule` | ReBAC + ABAC | 보안 인시던트의 stakeholder + 역할 게이트 |
-| `sensitivity_rule` | RBAC | 위 규칙에 안 걸리면, 역할별 기본 민감도(`public`/`internal`/`restricted`/`privileged`) |
-
-어떤 규칙도 결정을 내리지 않으면 **기본 거부**(closed-world default deny)한다 — 명시적으로 허용된 경우에만 접근이 열린다.
-
-**Principal** 5필드: `user_id`, `role`, `dept`, `audit_engagement_id`, `raw_claims`.
-**9개 페르소나**: employee×3, team_lead, executive, security_officer, external(contractor), auditor, hr_specialist. (`audit_engagement_id`는 auditor만 보유)
-
-문서 민감도는 역할이 아니라 **직교하는 축**(`sensitivity`)으로 모델링했다 — 같은 카테고리라도 문서별로 민감도가 다를 수 있고, RBAC로는 표현하기 어려운 조건부 접근(특권·당사자·stakeholder)을 위 규칙들이 처리한다.
-
-> **Supabase RLS를 쓰지 않은 이유**: Row Level Security는 row 단위 boolean 필터라 위와 같은 6단계 우선순위 정책이나 attorney-client privilege 같은 조건부 규칙을 표현하기 어렵다. 정책 엔진을 애플리케이션 레이어에 두고, DB는 순수 저장소로 사용했다.
+> First model download (BGE-M3 + reranker) pulls ~2–3 GB and runs on CPU. The first request is slow; subsequent ones are cached. / 최초 1회 BGE-M3·리랭커 다운로드(~2~3GB, CPU 동작)로 첫 요청은 느리고 이후 캐시됩니다.
 
 ---
 
-## 평가
+## Quickstart (local) / 빠른 시작 (로컬)
 
-`scripts/eval_retrieval.py` — 라이브 `can_read()` 정책을 ground truth로 사용하는 RAGAS 스타일 검색 평가.
+> Tested locally with Docker pgvector. Cloud/web deployment is **not** included here (the local pipeline is the supported path). / 로컬 Docker pgvector 기준으로 검증했습니다. 클라우드/웹 배포는 포함하지 않습니다(로컬 파이프라인이 지원 경로).
 
-- 18개 테스트 케이스 × 9 페르소나 = 34개 평가 가능 케이스 (truth 비어있지 않은 것)
-- 6개 권한 규칙 전부 커버
-
-| metric (top_k=5) | w/o rerank | w/ rerank | delta |
-|---|---|---|---|
-| precision@5 | 0.294 | 0.364 | +0.070 |
-| recall@5 | 0.971 | 0.978 | +0.007 |
-| F1 | 0.451 | 0.530 | +0.079 |
-
-재순위(BGE Reranker v2-m3)가 precision을 끌어올리면서 recall은 유지하거나 소폭 개선한다.
-
----
-
-## Tech Stack
-
-- **Language**: Python 3.13
-- **API**: FastAPI (`/query`, `/answer`, `/auth/*`, `/health`)
-- **Embedding**: BGE-M3 (1024-dim dense)
-- **Re-ranker**: BGE Reranker v2-m3 (cross-encoder)
-- **Vector DB**: pgvector (HNSW + GIN/B-tree for ABAC array filters)
-- **Generation**: Claude (Sonnet 4.6) — 허용 문서만 컨텍스트로
-- **Auth**: 자체 JWT (mock issuer), `Bearer` 토큰
-- **Observability**: Langfuse 트레이싱 (계획 — 권한 필터가 LLM 앞에서 무엇을 걸렀는지 추적)
-- **Infra**: Hugging Face Spaces (Docker) + Supabase (managed Postgres + pgvector)
-- **CI/CD**: GitHub Actions → HF Space (GitOps; push 시 자동 배포)
-
----
-
-## 배포
-
-GitHub `main`에 push하면 GitHub Actions가 Hugging Face Space로 force-push하고, HF가 Docker 이미지를 빌드·배포한다 (GitOps; GitHub이 단일 진실의 원천).
-
-```
-git push origin main
-  → GitHub Actions (.github/workflows/deploy.yml)
-  → Hugging Face Space (Docker build)
-  → 모델 로드 + Supabase 연결 → Running
-```
-
-- DB(`documents` + `audit_log`)는 Supabase에 분리. 컴퓨트(모델·정책 엔진)와 상태(문서·임베딩)를 분리한 구성.
-- 비밀값(DB URL, JWT 키, Anthropic API 키)은 HF Space Secrets로 주입. 이미지·저장소에 포함하지 않는다.
-- `ENVIRONMENT=production`이면 약한 JWT 키로는 기동을 거부한다(config validator).
-
-### 배포 모드 — 클라우드 데모 vs 폐쇄망/API 통제 환경
-
-이 프로젝트의 1차 대상은 **외부 LLM API 호출이나 데이터 반출이 통제되는 엔터프라이즈 환경**이다(망분리, DLP, API 키 거버넌스). 클라우드 데모는 동작 시연용이고, 폐쇄망 배포로 바꾸는 지점은 명확히 분리돼 있다.
-
-| | 클라우드 데모 (현재) | 폐쇄망 / API 통제 환경 |
-|---|---|---|
-| LLM | Claude API (`claude-sonnet-4-6`) | 온프레미스 (Ollama + Qwen2.5 / Llama 3.1) |
-| 호스팅 | Hugging Face Spaces | 온프레미스 Docker |
-| Vector DB | Supabase (managed) | 온프레미스 Postgres + pgvector |
-| 모델 캐시 | HF 다운로드 | 사내 미러 / 오프라인 번들 |
-
-LLM 백엔드 교체는 **단일 지점**(`generation/answerer.py`)에서 이뤄진다. `ChatAnthropic`을 `ChatOllama`로 바꾸면, 나머지 파이프라인(검색, 6-rule 권한 필터, citation)은 그대로다.
-
-핵심은 **권한 필터가 생성(LLM) 앞에 있다**는 점이다. 권한 범위를 벗어난 문서는 외부 API든 온프레미스 모델이든 어떤 LLM에도 전달되지 않는다. 즉 권한 경계가 곧 **데이터 반출 통제 지점**이 된다 — API 통제 환경에서 RAG를 도입할 때 가장 우려되는 부분을 구조로 막는다.
-
----
-
-## Roadmap
-
-- [x] **M1: Foundation** — 시스템 설계, BWCorp 시나리오·데이터 스펙
-- [x] **M2: MVP** — FastAPI + pgvector + JWT + 권한 필터링 + 검색 e2e
-- [x] **M3: Re-ranking & Evaluation** — BGE Reranker, RAGAS 스타일 평가, audit log 정확성
-- [x] **M4: Production** — sensitivity 권한 모델 마이그레이션, 보안 하드닝, HF Spaces + Supabase 배포, LLM 답변 생성(`/answer`)
-- [ ] **M5: Polish & Launch** — README, 데모 영상, 아키텍처 문서, Langfuse 트레이싱(권한 필터 가시화)
-
----
-
-## Blog Series
-
-진행 과정과 의사결정 기록 — [parkjongmin-ddam.github.io](https://parkjongmin-ddam.github.io)
-
-- 1편: 왜 권한 기반 RAG인가 — 설계와 MVP (M1+M2)
-- 2편: Reranker, audit log 버그, schema drift (M3)
-- 3편: 권한 모델 마이그레이션, 클라우드 배포, 권한 인식 생성 (M4)
-
----
-
-## Quickstart (local)
+### 1. Clone & install / 클론 및 설치
 
 ```bash
-# 1. 로컬 pgvector (또는 Supabase 연결)
-docker compose up -d
-
-# 2. 환경변수
-cp .env.example .env   # DATABASE_URL, JWT_SECRET_KEY (+ /answer 쓰려면 ANTHROPIC_API_KEY)
-
-# 3. 문서 + 임베딩 적재
-uv run python scripts/ingest.py
-
-# 4. API 기동
-uv run uvicorn permission_aware_rag.main:app --reload
-
-# 5. 검색만 / 생성까지
-#    POST /query   → 권한 필터링된 문서 목록
-#    POST /answer  → 허용 문서만 근거로 생성한 답변 + citation
+git clone https://github.com/parkjongmin-ddam/permission-aware-rag.git
+cd permission-aware-rag
+uv sync          # creates .venv and installs from pyproject.toml
 ```
 
-## License
+### 2. Configure environment / 환경 변수 설정
 
-[MIT](LICENSE)
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```dotenv
+# Postgres / pgvector (matches docker-compose.yml)
+DATABASE_URL=postgresql://pawrag_user:pawrag_password@localhost:5432/permission_aware_rag
+
+# Required for /answer (generation). /query works without it.
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Local development
+ENVIRONMENT=development
+
+# Optional — Langfuse tracing (leave blank to disable; runs as no-op)
+# LANGFUSE_PUBLIC_KEY=
+# LANGFUSE_SECRET_KEY=
+# LANGFUSE_HOST=https://cloud.langfuse.com
+```
+
+> ⚠️ Check these keys against your own `.env.example` — your file is the source of truth. / 위 키 이름은 본인 `.env.example`과 대조해 주세요. 실제 파일이 기준입니다.
+
+### 3. Start the database / 데이터베이스 실행
+
+```bash
+docker compose up -d
+docker compose ps            # wait for (healthy)
+```
+
+Verify schema & pgvector / 스키마·확장 확인:
+
+```bash
+docker compose exec postgres psql -U pawrag_user -d permission_aware_rag -c "\dt"
+docker compose exec postgres psql -U pawrag_user -d permission_aware_rag -c "SELECT extname, extversion FROM pg_extension WHERE extname='vector';"
+```
+
+### 4. Load the demo documents / 데모 문서 적재
+
+Embed the demo corpus (`data/documents.yaml`, 45 documents) into pgvector with BGE-M3. The first run downloads the model (~2 GB) and is cached afterward.
+
+> `data/documents.yaml`의 45개 데모 문서를 BGE-M3로 임베딩해 pgvector에 적재합니다. 최초 1회 모델 다운로드(~2GB) 후 캐시됩니다. 재실행은 UPSERT라 안전합니다.
+
+```bash
+uv run python scripts/ingest.py
+```
+
+Expected output / 기대 출력:
+
+```
+Loaded 45 documents
+Generated 45 embeddings, shape=(45, 1024)
+Inserted/updated: 45
+Failed: 0
+Total in DB: 45
+```
+
+Verify the load / 적재 확인:
+
+```bash
+docker compose exec postgres psql -U pawrag_user -d permission_aware_rag \
+  -c "SELECT sensitivity, COUNT(*) FROM documents GROUP BY sensitivity ORDER BY sensitivity;"
+# public 7 / internal 12 / restricted 23 / privileged 3  (total 45)
+```
+
+### 5. Run the API / API 실행
+
+```bash
+uv run uvicorn permission_aware_rag.main:app --reload --port 8000
+```
+
+Open the interactive docs / Swagger 문서: **http://127.0.0.1:8000/docs**
+
+### 6. Try the demo UI / 데모 UI
+
+Open the chat UI in `demo/` in a browser (it calls the local API). Pick a persona, click a suggestion chip, and watch the **allowed / denied** badges and cited-document chips change per persona.
+
+> `demo/` 폴더의 채팅 UI를 브라우저로 열면 로컬 API를 호출합니다. 페르소나를 고르고 추천 칩을 누르면 페르소나별로 **allowed/denied** 배지와 인용 문서 칩이 달라집니다.
+
+---
+
+## API / 엔드포인트
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET`  | `/health` | Liveness check / 헬스체크 |
+| `POST` | `/auth`   | Issue a JWT for a persona / 페르소나 JWT 발급 |
+| `POST` | `/query`  | Retrieve + permission-filter (no LLM) / 검색 + 권한 필터(LLM 미사용) |
+| `POST` | `/answer` | Full RAG: filtered retrieval → Claude answer / 풀 RAG: 필터 검색 → Claude 답변 |
+
+A typical flow: `POST /auth` to get a persona token → call `/query` or `/answer` with that token. The response surfaces `allowed_doc_ids` and `denied_doc_ids` so you can *see* what the permission layer blocked.
+
+> 일반 흐름: `/auth`로 페르소나 토큰 발급 → 해당 토큰으로 `/query`나 `/answer` 호출. 응답에 `allowed_doc_ids` / `denied_doc_ids`가 담겨 권한 레이어가 무엇을 막았는지 *눈으로* 확인할 수 있습니다.
+
+---
+
+## On-prem / air-gapped deployment / 온프레미스·망분리 전환
+
+This project targets environments where external LLM calls and data exfiltration are controlled (network isolation, DLP, API-key governance). Generation is the **only** component that calls an external API, and it is isolated to a single swap point.
+
+> 외부 LLM 호출과 데이터 유출이 통제되는 환경(망분리·DLP·API 키 거버넌스)을 겨냥합니다. 외부 API를 호출하는 부분은 생성(generation) 하나뿐이며, 단일 지점으로 격리되어 있습니다.
+
+In `generation/answerer.py`, swap `ChatAnthropic` for `ChatOllama` to run fully on-premises with a local model. Embedding, reranking, retrieval, and permission enforcement are already local.
+
+> `generation/answerer.py`에서 `ChatAnthropic`을 `ChatOllama`로 교체하면 로컬 모델로 완전 온프레미스 동작이 가능합니다. 임베딩·리랭킹·검색·권한 강제는 이미 로컬에서 수행됩니다.
+
+| Mode | Embedding/Rerank | Generation |
+| --- | --- | --- |
+| Cloud demo | local (BGE) | Claude API |
+| Air-gapped / API-restricted | local (BGE) | local Ollama |
+
+---
+
+## Evaluation / 평가
+
+Retrieval quality was measured with RAGAS; adding the BGE reranker improved F1 by ~21% over the no-rerank baseline on the demo evaluation set.
+
+> 검색 품질은 RAGAS로 측정했으며, BGE 리랭커 적용 시 무리랭커 베이스라인 대비 데모 평가셋에서 F1 약 21% 향상을 확인했습니다.
+
+---
+
+## Status / 현황
+
+- ✅ Local pipeline (retrieval → permission → rerank → generation) working end-to-end
+- ✅ 9 personas, 6 permission rules, 3-persona comparison demo
+- ✅ `chat.html` local demo UI
+- ✅ RAGAS evaluation (reranker uplift)
+- ➖ HF Spaces deploy workflow exists under `.github/workflows`, but no public deployment is maintained (local is the supported path)
+
+> 로컬 파이프라인 전 구간 동작 / 9 페르소나·6룰·3인 데모 / 데모 UI / RAGAS 평가 완료. HF Spaces 배포 워크플로는 `.github/workflows`에 있으나 운영 중인 공개 배포는 없습니다(로컬이 지원 경로).
+
+---
+
+## License / 라이선스
+
+MIT — see [LICENSE](./LICENSE).
