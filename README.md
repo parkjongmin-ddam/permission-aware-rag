@@ -306,7 +306,7 @@ Retrieval quality was measured with RAGAS; adding the BGE reranker improved F1 b
 - ✅ 9 personas, 6 permission rules, 3-persona comparison demo
 - ✅ `chat.html` local demo UI
 - ✅ RAGAS evaluation (reranker uplift)
-- ✅ STO legal chapter integrated (96 docs) — permission enforcement verified end-to-end through retrieval **and** generation; see [`docs/sto-chapter-eval.md`](docs/sto-chapter-eval.md)
+- ✅ STO legal chapter (96 docs, adapted from the sibling [`sto-rag`](https://github.com/parkjongmin-ddam/sto-rag) project) integrated — permission enforcement verified end-to-end through retrieval **and** generation; see [`docs/sto-chapter-eval.md`](docs/sto-chapter-eval.md)
 - ➖ HF Spaces deploy workflow exists under `.github/workflows`, but no public deployment is maintained (local is the supported path)
 
 > 로컬 파이프라인 전 구간 동작 / 9 페르소나·6룰·3인 데모 / 데모 UI / RAGAS 평가 완료 / STO 법령 챕터(96문서) 통합 — 검색·생성 종단에서 권한 강제 검증([`docs/sto-chapter-eval.md`](docs/sto-chapter-eval.md)). HF Spaces 배포 워크플로는 `.github/workflows`에 있으나 운영 중인 공개 배포는 없습니다(로컬이 지원 경로).
