@@ -237,15 +237,26 @@ test_cases:
       - user_exec_001    # executive → allowed
 
   - id: TC-STO-03
-    query: "계좌관리기관 자격 요건"
-    description: "STO public reference — contractor (external) can read public statutory docs."
+    query: "계좌관리기관이 될 수 있는 자의 자격 요건"
+    description: >-
+      STO public statute — the qualification requirements ARE 전자등록법 제19조
+      ("다음 각 호의 어느 하나에 해당하는 자는 계좌관리기관이 될 수 있다"), so the
+      relevant docs are the statute chunks, not the concept entry. All public.
     relevant_docs:
-      - STO-016          # frontmatter (public)
-      - STO-017          # 한 줄 정의 (public)
-      - STO-018          # 요약 (public)
+      - STO-075          # 제19조 (the qualification rule)
+      - STO-076          # 제19조제1호 ~
+      - STO-077          # 제19조제2호 (은행 등)
+      - STO-078          # 제19조제3호
+      - STO-079          # 제19조제4호
+      - STO-080          # 제19조제5호
+      - STO-081          # 제19조제6호
+      - STO-082          # 제19조제7호
+      - STO-083          # 제19조제8호
+      - STO-091          # 제2조제7호 (계좌관리기관 정의)
+      - STO-018          # 요약 (qualification context)
     personas:
-      - user_emp_001     # employee — allowed
-      - user_ext_001     # contractor — allowed
+      - user_emp_001     # employee — public → allowed
+      - user_ext_001     # contractor — public → allowed
 
 config:
   top_k: 5

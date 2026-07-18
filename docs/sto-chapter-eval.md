@@ -56,19 +56,28 @@ cases; ground truth = the real `can_read` policy):
 
 | metric | w/o rerank | w/ rerank | Δ |
 |---|---|---|---|
-| precision@5 | 0.307 | **0.372** | +0.065 |
-| recall@5 | 0.927 | **0.941** | +0.014 |
-| F1 | 0.462 | **0.533** | +0.072 |
+| precision@5 | 0.356 | **0.411** | +0.055 |
+| recall@5 | 0.949 | 0.947 | −0.002 |
+| F1 | 0.518 | **0.573** | +0.055 |
 
 The reranker consistently improves precision.
 
-### Known gap / 알려진 갭
+### Measurement caught a mislabeled case / 측정이 잡아낸 라벨 오류
 
-`TC-STO-03` ("계좌관리기관 자격 요건") — BGE-M3 does not rank the correct STO docs in the
-top-5 for this Korean query (the reranker recovers one). This is a **retrieval-relevance**
-gap, not a permission failure; a candidate for query expansion / reranker tuning.
+An earlier `TC-STO-03` showed precision@5 = 0.00 and looked like a retrieval gap. On
+inspection it was a **mislabeled ground truth**, not a retrieval failure: the query
+*"계좌관리기관 자격 요건"* (qualification requirements) is answered by the **statute**
+(전자등록법 제19조 — "다음 각 호의 어느 하나에 해당하는 자는 계좌관리기관이 될 수 있다",
+STO-075…083 + the definition STO-091), which BGE-M3 retrieved correctly all along — the
+gold had been set to the *concept* entry docs (STO-016/017/018) instead. After correcting
+the gold to the statute chunks, **precision@5 = 1.00** (every top-5 result is a correct
+qualification-statute doc; recall@5 = 0.45 is bounded by top_k=5 vs 11 relevant chunks).
 
-> `TC-STO-03`은 BGE-M3가 정답 문서를 top-5에 못 올리는 검색 관련도 갭(권한 문제 아님) — 향후 튜닝 대상.
+> 초기 `TC-STO-03`은 precision@5=0.00으로 검색 갭처럼 보였으나, 실제로는 **ground truth 라벨
+> 오류**였습니다. "자격 요건" 질의의 정답은 조문(제19조 = "…에 해당하는 자는 계좌관리기관이 될 수
+> 있다")인데 gold를 개념 entry(016/017/018)로 잘못 달았던 것 — BGE-M3는 조문을 정확히 회수하고
+> 있었습니다. gold를 조문으로 교정하니 **precision@5=1.00**(recall@5=0.45는 관련 11문서 대비
+> top-5 상한). 측정이 아니었으면 못 잡았을, 카파시 "측정 후 판단"의 사례.
 
 ## Reproduce / 재현
 
