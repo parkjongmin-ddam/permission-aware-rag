@@ -19,7 +19,11 @@ from permission_aware_rag.config import settings
 
 
 EMBEDDING_MODEL = "BAAI/bge-m3"
-DOCUMENTS_FILE = Path(__file__).parent.parent / "data" / "documents.yaml"
+_DATA_DIR = Path(__file__).parent.parent / "data"
+DOCUMENTS_FILE = _DATA_DIR / "documents.yaml"
+# Optional additional chapters merged into the corpus (e.g. the STO legal chapter
+# adapted from sto-rag via scripts/adapt_sto_chapter.py). Absent files are skipped.
+CHAPTER_FILES = [_DATA_DIR / "sto_chapter.yaml"]
 
 
 INSERT_SQL = """
@@ -69,12 +73,21 @@ def load_embedder() -> SentenceTransformer:
 
 
 def load_documents() -> list[dict]:
-    """Load documents.yaml and return the document list."""
+    """Load documents.yaml plus any optional chapter files, merged into one corpus."""
     print(f"\nLoading documents from: {DOCUMENTS_FILE}")
     with open(DOCUMENTS_FILE, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    documents = data["documents"]
+        documents = yaml.safe_load(f)["documents"]
     print(f"  Loaded {len(documents)} documents")
+
+    for chapter in CHAPTER_FILES:
+        if not chapter.exists():
+            continue
+        with open(chapter, "r", encoding="utf-8") as f:
+            chapter_docs = yaml.safe_load(f)["documents"]
+        documents.extend(chapter_docs)
+        print(f"  + {len(chapter_docs)} documents from {chapter.name}")
+
+    print(f"  Total: {len(documents)} documents")
     return documents
 
 
