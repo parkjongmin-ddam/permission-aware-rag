@@ -30,10 +30,21 @@ def load_dataset() -> tuple[list[dict], dict]:
 
 
 def load_documents() -> dict[str, dict]:
-    """Returns {doc_id: full_doc_dict} from documents.yaml."""
-    with open(PROJECT_ROOT / "data" / "documents.yaml", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    return {d["id"]: d for d in data["documents"]}
+    """Returns {doc_id: full_doc_dict} from documents.yaml + optional chapter files.
+
+    Mirrors scripts/ingest.py so eval ground truth (can_read) covers every ingested
+    document, including the STO chapter.
+    """
+    docs: dict[str, dict] = {}
+    files = [PROJECT_ROOT / "data" / "documents.yaml",
+             PROJECT_ROOT / "data" / "sto_chapter.yaml"]
+    for path in files:
+        if not path.exists():
+            continue
+        with open(path, encoding="utf-8") as f:
+            for d in yaml.safe_load(f)["documents"]:
+                docs[d["id"]] = d
+    return docs
 
 
 def get_principal(user_id: str) -> Principal:

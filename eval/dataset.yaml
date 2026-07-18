@@ -205,5 +205,47 @@ test_cases:
       - user_sec_001       # compliance overlap with security
       - user_emp_001       # general — denied
 
+  # ========================================
+  # STO legal chapter (public statutory reference vs internal engineering notes)
+  # from data/sto_chapter.yaml — sensitivity: public (general/legal tiers) vs
+  # internal (engineer tier). Tests that public STO is broadly readable while
+  # internal STO commentary is gated to team_lead and above.
+  # ========================================
+
+  - id: TC-STO-01
+    query: "토큰의 증권성은 어떻게 판단하나 (투자계약증권)"
+    description: "STO public statutory reference — readable by all RBAC roles."
+    relevant_docs:
+      - STO-006          # frontmatter (public)
+      - STO-007          # 한 줄 정의 (public)
+      - STO-008          # 요약 (public)
+    personas:
+      - user_emp_001     # employee — public → allowed
+      - user_tl_001      # team_lead — allowed
+      - user_ext_001     # contractor — public → allowed
+
+  - id: TC-STO-02
+    query: "증권성 판단의 엔지니어링 관점과 미해결 이슈"
+    description: "STO internal engineering notes — gated: employee/contractor denied, team_lead+ allowed."
+    relevant_docs:
+      - STO-009          # 엔지니어 관점 (internal)
+      - STO-010          # 헷갈린 점 / 미해결 질문 (internal)
+    personas:
+      - user_emp_001     # employee {public} → DENIED (truth empty)
+      - user_ext_001     # contractor {public} → DENIED
+      - user_tl_001      # team_lead {public, internal} → allowed
+      - user_exec_001    # executive → allowed
+
+  - id: TC-STO-03
+    query: "계좌관리기관 자격 요건"
+    description: "STO public reference — contractor (external) can read public statutory docs."
+    relevant_docs:
+      - STO-016          # frontmatter (public)
+      - STO-017          # 한 줄 정의 (public)
+      - STO-018          # 요약 (public)
+    personas:
+      - user_emp_001     # employee — allowed
+      - user_ext_001     # contractor — allowed
+
 config:
   top_k: 5
