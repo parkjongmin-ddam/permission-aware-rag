@@ -98,11 +98,25 @@ The same query, three users — the answer changes because the *visible document
 | --- | --- | --- | --- |
 | **`emp_001`** (general employee) | 2 / 13 | denied | "관련 소송 정보 없음" — sees almost nothing |
 | **`aud_001`** (auditor) | 13 / 2 | **denied** | Broad visibility, **but still blocked** from the privileged doc |
-| **`exec_001`** (executive) | 9 / 6 | **cited** | Full litigation details (incl. the case amount) via `parties_rule` |
+| **`exec_001`** (executive) | 7 / 8 | **cited** | Full litigation details (incl. the case amount) via `parties_rule` |
 
 The key point: the **auditor sees more documents than the employee (13 vs 2)** yet **both are blocked from DOC-044** — demonstrating that ReBAC + privilege gating beats role-based access control alone. "More senior" ≠ "sees everything."
 
 > 핵심: **감사인이 직원보다 더 많은 문서(13 vs 2)를 보지만**, **둘 다 DOC-044는 차단**됩니다. 단순 RBAC만으로는 불가능한, "ReBAC + 권한 게이팅"의 가치를 보여줍니다. "직급이 높다 = 다 본다"가 아닙니다.
+
+The executive's count was 9 / 6 before the sub-type refinement. Two of those grants were over-grants: another employee's expense report (DOC-032) and a security compliance report (DOC-015). Both are now denied by `subtype_restriction_rule`; the retrieved candidates and their order are unchanged.
+
+> 하위유형 규칙 추가 전 경영진 결과는 9 / 6이었습니다. 그중 2건은 과다 허용으로, 다른 직원의 경비 내역(DOC-032)과 보안 컴플라이언스 문서(DOC-015)였습니다. 현재는 `subtype_restriction_rule`로 차단되며, 검색 후보와 순서는 그대로입니다.
+
+Reproduce (query `ExternalCo dispute litigation`, all 9 personas, no HTTP server needed) / 재현:
+
+```bash
+uv run python scripts/demo_personas.py
+```
+
+The script calls the same `retrieve()` as `/query` on a `SelectorEventLoop`, so it also runs on Windows, where uvicorn's default `ProactorEventLoop` is not supported by async psycopg.
+
+> `/query`와 같은 `retrieve()`를 `SelectorEventLoop`에서 호출하므로 Windows에서도 실행됩니다(uvicorn 기본 `ProactorEventLoop`는 psycopg 비동기 모드 미지원).
 
 ---
 
