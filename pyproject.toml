@@ -47,3 +47,6 @@ target-version = "py313"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+pythonpath = ["src"]
+# scripts/test_*.py are manual scripts that need the live DB stack
+testpaths = ["tests"]

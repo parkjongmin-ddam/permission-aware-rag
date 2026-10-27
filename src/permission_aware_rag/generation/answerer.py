@@ -85,7 +85,7 @@ async def generate_answer(query: str, allowed_docs: list[ScoredDocument]) -> Ans
     # API-key governance). This is the ONE place that changes for such a
     # deployment: replace ChatAnthropic with an on-prem backend - e.g. Ollama
     # serving a local model (Qwen2.5 / Llama 3.1) via langchain-ollama's
-    # ChatOllama. Everything else (retrieval, the 6-rule permission filter,
+    # ChatOllama. Everything else (retrieval, the 7-rule permission filter,
     # citation extraction) is unchanged.
     #
     # Why this matters: the permission filter runs BEFORE this call, so no

@@ -14,6 +14,7 @@ from permission_aware_rag.permission.rules import (
     project_rule,
     self_access_rule,
     sensitivity_rule,
+    subtype_restriction_rule,
 )
 from permission_aware_rag.permission.types import PolicyDecision
 
@@ -24,13 +25,15 @@ Rule = Callable[[Principal, dict], Optional[PolicyDecision]]
 
 # Rule registry — evaluated in order. Earlier rules take precedence.
 # Order matters: audit_rule first (auditor override), conditional rules in
-# the middle (self/project/parties/incident), sensitivity_rule last as catch-all.
+# the middle (self/project/parties/incident), sub-type refinements before the
+# sensitivity_rule catch-all so a tier grant cannot widen a closed sub-type.
 RULES: list[Rule] = [
     audit_rule,             # 4.2.4 - highest priority: auditor with engagement_id
     self_access_rule,       # 4.2.2 - self-grant for hr.personnel / finance.expense
     project_rule,           # 4.2.2 - tech.project strict ABAC (no role override)
     parties_rule,           # 4.2.3 - legal.* case parties
     incident_rule,          # 4.2.3 - security.incident ReBAC + role gates
+    subtype_restriction_rule,  # data-spec 4.3 - closed reader sets for sensitive sub-types
     sensitivity_rule,       # 4.2.4 - lowest priority: sensitivity-keyed RBAC catch-all
 ]
 

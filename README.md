@@ -41,16 +41,16 @@ This is an **explicit function pipeline**, not a graph/agent framework. The flow
 
 ```
                 ┌─────────────┐
-   query  ──▶   │  retrieval  │  BGE-M3 embedding → pgvector (HNSW) top-k
+   query  ──▶   │  retrieval  │  BGE-M3 embedding → pgvector (HNSW) top_k × 10 candidates
                 └──────┬──────┘
                        ▼
                 ┌─────────────┐
-                │  permission │  6 rules → allowed_doc_ids / denied_doc_ids
-                │   filter    │  (ReBAC + sensitivity)
+                │  reranking  │  BGE Reranker v2-m3 → keep top 15
                 └──────┬──────┘
                        ▼
                 ┌─────────────┐
-                │  reranking  │  BGE Reranker v2-m3 on the *allowed* set
+                │  permission │  7 rules → allowed_doc_ids / denied_doc_ids
+                │   filter    │  (ReBAC + sub-type refinements + sensitivity)
                 └──────┬──────┘
                        ▼
                 ┌─────────────┐
@@ -60,26 +60,31 @@ This is an **explicit function pipeline**, not a graph/agent framework. The flow
               answer + cited docs + audit log
 ```
 
-**Retrieval → Permission → Rerank → Generation.** Denied documents are dropped *before* reranking and generation. Every request is written to an audit log with the allowed/denied document IDs.
+**Retrieval → Rerank → Permission → Generation.** Denied documents are dropped *before* generation, so they never reach the model. Every request is written to an audit log with the allowed/denied document IDs.
 
-> **검색 → 권한 → 리랭킹 → 생성.** 거부 문서는 리랭킹·생성 *이전*에 제거됩니다. 모든 요청은 allowed/denied 문서 ID와 함께 감사 로그에 기록됩니다.
+> **검색 → 리랭킹 → 권한 → 생성.** 거부 문서는 생성 *이전*에 제거되어 모델에 전달되지 않습니다. 모든 요청은 allowed/denied 문서 ID와 함께 감사 로그에 기록됩니다.
 
 ---
 
-## The 6 permission rules / 6개 정책 룰
+## The 7 permission rules / 7개 정책 룰
 
-Rules are evaluated in order (defined in `permission/policy.py`). The first rule that grants access wins; otherwise the document is denied.
+Rules are evaluated in order (defined in `permission/policy.py`). The first rule that returns a decision (allow *or* deny) wins; if no rule decides, the document is denied.
 
-> 룰은 정해진 순서(`permission/policy.py`)로 평가됩니다. 접근을 허용하는 첫 룰이 적용되며, 없으면 거부됩니다.
+> 룰은 정해진 순서(`permission/policy.py`)로 평가됩니다. 허용이든 거부든 처음 결정을 내린 룰이 적용되며, 어떤 룰도 결정하지 않으면 거부됩니다.
 
-| Rule | Grants access when… / 허용 조건 |
-| --- | --- |
-| `self_access_rule` | The user *is* the subject of the document / 사용자가 문서의 당사자 본인 |
-| `project_rule` | The user is a member of the document's project / 문서 프로젝트의 멤버 |
-| `parties_rule` | The user is listed in the document's `parties` / 문서 `parties`에 명시됨 |
-| `incident_rule` | The user is a stakeholder of the incident / 인시던트 이해관계자 |
-| `audit_rule` | The user has an audit role (with sensitivity limits) / 감사 권한(민감도 한도 적용) |
-| `sensitivity_rule` | Default gate by document sensitivity vs. role clearance / 문서 민감도 대비 역할 권한 기본 게이트 |
+| # | Rule | Decides when… / 결정 조건 |
+| --- | --- | --- |
+| 1 | `audit_rule` | Auditor with an active engagement — broad read, except personnel files and privileged litigation / 감사 배정된 감사인(인사기록·privileged 소송 제외) |
+| 2 | `self_access_rule` | The user *is* the subject of a personnel or expense document / 인사기록·경비 문서의 당사자 본인 |
+| 3 | `project_rule` | `tech.project`: members only, no role override / 프로젝트 멤버만 |
+| 4 | `parties_rule` | `legal.*`: listed in `parties` (contracts closed to non-parties) / 계약·소송 당사자 |
+| 5 | `incident_rule` | `security.incident`: stakeholder, security officer, or briefed/critical for executives / 보안 사고 관계자 |
+| 6 | `subtype_restriction_rule` | Sensitive sub-types have a closed reader set; unlisted roles are denied (data-spec 4.3) / 민감 하위유형은 지정 역할만 |
+| 7 | `sensitivity_rule` | Catch-all: document sensitivity vs. role clearance / 문서 민감도 대비 역할 기본 게이트 |
+
+**Known gaps vs. data-spec / 데이터 명세 대비 미구현 부분** — department-scoped access (spec 4.2, e.g. `R(own dept)`) is not modeled, so `sensitivity_rule` is coarser than the spec for `internal` documents: some are readable by roles outside the owning department, and some all-staff `internal` documents are not readable by `employee`. `tests/test_policy.py` guards the sensitive sub-types against over-grant.
+
+> 부서 단위 접근(명세 4.2의 `R(own dept)` 등)은 아직 구현되지 않아, `internal` 문서에서는 `sensitivity_rule`이 명세보다 거칠게 동작합니다(소유 부서 밖 역할이 읽을 수 있는 문서, 전 직원 대상인데 `employee`가 못 읽는 문서가 일부 있음). 민감 하위유형의 과다 허용은 `tests/test_policy.py`가 검사합니다.
 
 ---
 
@@ -128,7 +133,7 @@ permission-aware-rag/
 │   ├── config.py               #   pydantic-settings (env vars, deploy mode)
 │   ├── api/routes/             #   health, auth, query, answer
 │   ├── auth/                   #   jwt_utils, dependencies, personas (9)
-│   ├── permission/             #   rules.py (6 rules), policy.py, types.py
+│   ├── permission/             #   rules.py (7 rules), policy.py, types.py
 │   ├── retrieval/              #   embedder, reranker, retriever
 │   ├── generation/             #   answerer.py  ← LLM swap point (Claude/Ollama)
 │   ├── observability/          #   tracing.py (Langfuse, optional)
@@ -302,14 +307,14 @@ Retrieval quality was measured with RAGAS; adding the BGE reranker improved F1 b
 
 ## Status / 현황
 
-- ✅ Local pipeline (retrieval → permission → rerank → generation) working end-to-end
-- ✅ 9 personas, 6 permission rules, 3-persona comparison demo
+- ✅ Local pipeline (retrieval → rerank → permission → generation) working end-to-end
+- ✅ 9 personas, 7 permission rules, 3-persona comparison demo
 - ✅ `chat.html` local demo UI
 - ✅ RAGAS evaluation (reranker uplift)
 - ✅ STO legal chapter (96 docs, adapted from the sibling [`sto-rag`](https://github.com/parkjongmin-ddam/sto-rag) project) integrated — permission enforcement verified end-to-end through retrieval **and** generation; see [`docs/sto-chapter-eval.md`](docs/sto-chapter-eval.md)
 - ➖ HF Spaces deploy workflow exists under `.github/workflows`, but no public deployment is maintained (local is the supported path)
 
-> 로컬 파이프라인 전 구간 동작 / 9 페르소나·6룰·3인 데모 / 데모 UI / RAGAS 평가 완료 / STO 법령 챕터(96문서) 통합 — 검색·생성 종단에서 권한 강제 검증([`docs/sto-chapter-eval.md`](docs/sto-chapter-eval.md)). HF Spaces 배포 워크플로는 `.github/workflows`에 있으나 운영 중인 공개 배포는 없습니다(로컬이 지원 경로).
+> 로컬 파이프라인 전 구간 동작 / 9 페르소나·7룰·3인 데모 / 데모 UI / RAGAS 평가 완료 / STO 법령 챕터(96문서) 통합 — 검색·생성 종단에서 권한 강제 검증([`docs/sto-chapter-eval.md`](docs/sto-chapter-eval.md)). HF Spaces 배포 워크플로는 `.github/workflows`에 있으나 운영 중인 공개 배포는 없습니다(로컬이 지원 경로).
 
 ---
 

@@ -251,6 +251,61 @@ def audit_rule(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Sub-type refinements (data-spec 4.3 / 5.3)
+#
+# The sensitivity matrix below grants by tier only, so a role allowed to read
+# "restricted" documents would otherwise read EVERY restricted document —
+# other people's personnel files and expense reports, compensation data,
+# threat intel. Data-spec 5.3 states that sub-type refinements win over
+# generic grants. This rule enforces them as a closed reader set: any role
+# not listed is explicitly denied, before the sensitivity catch-all runs.
+#
+# Relationship-based grants (self-access, auditor engagement) run earlier in
+# policy.RULES and are unaffected.
+# ─────────────────────────────────────────────────────────────────────────────
+
+SUBTYPE_READERS: dict[str, frozenset[str]] = {
+    # Personal records: subject (self_access_rule) + HR only
+    "hr.personnel":          frozenset({"hr_specialist"}),
+    # Personal expense reports: subject (self_access_rule) only
+    "finance.expense":       frozenset(),
+    "hr.compensation":       frozenset({"executive", "hr_specialist"}),
+    "hr.recruitment":        frozenset({"hr_specialist", "executive", "team_lead"}),
+    "security.threat_intel": frozenset({"security_officer"}),
+    "security.compliance":   frozenset({"security_officer"}),
+    "finance.statement":     frozenset({"executive"}),
+    "finance.budget":        frozenset({"executive"}),
+}
+
+
+def subtype_restriction_rule(
+    principal: Principal, document: dict
+) -> Optional[PolicyDecision]:
+    """Closed reader sets for sensitive sub-types (data-spec 4.3).
+
+    Returns ALLOW if the principal's role is in the sub-type's reader set,
+    DENY if it is not, and None for sub-types without a refinement.
+    """
+    sub_type = document.get("sub_type")
+    readers = SUBTYPE_READERS.get(sub_type)
+    if readers is None:
+        return None
+
+    if principal.role in readers:
+        return PolicyDecision.allow(
+            rule_name="subtype_restriction",
+            reason=f"role {principal.role} is a reader of {sub_type}",
+        )
+    return PolicyDecision.deny(
+        rule_name="subtype_restriction",
+        reason=(
+            f"role {principal.role} is not a reader of {sub_type} "
+            f"(document {document.get('id')})"
+        ),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Stage 4.2.4 — Sensitivity-keyed RBAC default matrix
 #
 # Each role declares the maximum sensitivity it can read by default. More
